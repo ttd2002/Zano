@@ -142,24 +142,47 @@ const EditInformation = () => {
                 });
             }
             if (!result.canceled) {
-                const formData = new FormData();
 
                 const uri = result.assets[0].uri
-                const type = result.assets[0].type
-                const name = result.assets[0].fileName
-                const source = {uri,type,name}
-                console.log(source);
+                const type = result.assets[0].mimeType
+                const name = "imageUser.jpg"
+                const filesize = result.assets[0].filesize
+                const source = { uri, name, type }
+                console.log('source', source);
+                console.log(filesize);
                 // await editProfileHandle(result.assets[0].uri);
                 // await editProfileHandle(formData);
+                console.log(result);
+                handleUpdata(source)
             }
         } catch (error) {
             console.log("Error uploading Image: " + error)
             setModalVisible(false)
         }
     }
-const handleUpdata=()=>{
-    const formData = new FormData();
-}
+    const handleUpdata = (photo) => {
+        const data = new FormData();
+        
+        data.append('avatar', photo)
+        data.append('name', 'acccc')
+        // data.append('file', photo)
+        // data.append("upload_preset", "DemoZanoo")
+        // data.append("cloud_name", "dbtgez7ua")
+        // fetch("https://api.cloudinary.com/v1_1/dbtgez7ua/image/upload",{
+        //     method:'POST',
+        fetch(`http://${ipAddress}:3000/users/updateUser/${userId}`, {
+            method: 'PUT',
+            body: data,
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Accept': 'application/json',
+                'Content-Type': 'multipart/form-data'
+            }
+        }).then(res => res.json()).then(data => {
+            setAvatar(data.avatar)
+            console.log(data);
+        })
+    }
 
     // const saveImage = async (avatar) => {
     //     try {

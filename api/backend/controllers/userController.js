@@ -12,7 +12,7 @@ const getUser = async (req, res) => {
         res.status(500).json({ message: "failed" });
     }
 };
-const getFinded= async (req, res) => {
+const getFinded = async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -31,7 +31,7 @@ const getFinded= async (req, res) => {
         res.status(500).json({ message: "Error retrieving the messaged", error });
     }
 };
-const getMessaged= async (req, res) => {
+const getMessaged = async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -50,7 +50,7 @@ const getMessaged= async (req, res) => {
         res.status(500).json({ message: "Error retrieving the messaged", error });
     }
 };
-const addMessaged= async (req, res) => {
+const addMessaged = async (req, res) => {
     try {
         const { currentUserId, receiverId } = req.body;
         await User.findByIdAndUpdate(currentUserId, {
@@ -64,7 +64,7 @@ const addMessaged= async (req, res) => {
         res.status(500).json({ message: "Error add messaged", error });
     }
 };
-const addFinded= async (req, res) => {
+const addFinded = async (req, res) => {
     try {
         const { currentUserId, receiverId } = req.body;
         await User.findByIdAndUpdate(currentUserId, {
@@ -76,7 +76,7 @@ const addFinded= async (req, res) => {
         res.status(500).json({ message: "Error add finded", error });
     }
 };
-const editProfile= async (req, res) => {
+const editProfile = async (req, res) => {
     try {
         const { userId } = req.params;
         const { name, gender, birthDate } = req.body;
@@ -91,17 +91,17 @@ const editProfile= async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
         const user2 = await User.findById(userId);
-        const token = generateToken(user2._id,res);
+        const token = generateToken(user2._id, res);
 
         return res
             .status(200)
-            .json({ message: "updated succesfully", user});
+            .json({ message: "updated succesfully", user });
     } catch (error) {
         res.status(500).json({ message: "Error edit" });
     }
 };
 
-const editAvatar= async (req, res) => {
+const editAvatar = async (req, res) => {
     try {
         const { userId } = req.params;
         const { avatar } = req.body;
@@ -124,7 +124,7 @@ const editAvatar= async (req, res) => {
     }
 };
 
-const changePassword= async (req, res) => {
+const changePassword = async (req, res) => {
     try {
         const { phoneNum, newPassword } = req.body;
         const user = await User.findOne({ phone: phoneNum });
@@ -143,28 +143,125 @@ const changePassword= async (req, res) => {
         res.status(500).json({ message: "Error changing password" });
     }
 };
-const getFriendsByUser= async (req, res) => {
+const getFriendsByUser = async (req, res) => {
     try {
-      const { userId } = req.params;
-      const user = await User.findById(userId).populate("listFriend", ["name","phone"]);
-  
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-  
-      res.status(200).json({ friends: user.listFriend });
+        const { userId } = req.params;
+
+        const user = await User.findById(userId).populate("listFriend", ["name", "phone","avatar"]);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        console.log(userId);
+        res.status(200).json({ friends: user.listFriend });
     } catch (error) {
-      res.status(500).json({ message: "Error retrieving user's friends", error });
+        res.status(500).json({ message: "Error retrieving user's friends", error });
     }
-  };
+};
+const sendFriendRequestApp = async (req, res) => {
+    try {
+        // const senderId = req.user._id;
+        // const receiverId = req.params.id;
+        const { senderId, receiverId } = req.body;
+        console.log(senderId);
+        // Kiểm tra xem người nhận yêu cầu kết bạn có tồn tại không
+        const receiver = await User.findById(receiverId);
+        if (!receiver) {
+            return res.status(404).json({ error: "Receiver not found" });
+        }
 
+        // Kiểm tra xem đã là bạn bè hay chưa
+        if (receiver.listFriend.includes(senderId)) {
+            return res.status(400).json({ error: "You are already friends with this user" });
+        }
 
+        // Kiểm tra xem đã gửi yêu cầu kết bạn chưa
+        if (receiver.friendRequests.includes(senderId)) {
+            return res.status(400).json({ error: "Friend request already sent to this user" });
+        }
+
+        // Thêm yêu cầu kết bạn vào danh sách yêu cầu kết bạn của người nhận
+        receiver.friendRequests.push(senderId);
+        await receiver.save();
+        res.status(200).json({ message: "Friend request sent successfully" });
+    } catch (error) {
+        console.log("Error in sendFriendRequest controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+}
+const getListFriendRequestIdsSendApp = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        console.log(userId);
+        // Tìm người dùng trong cơ sở dữ liệu
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Tìm danh sách yêu cầu kết bạn của người dùng
+        const friendRequests = await User.find({ friendRequests: { $in: [userId] } });
+        const friendRequestIds = friendRequests.map(user => user._id.toString());
+        res.status(200).json(friendRequestIds);
+
+    } catch (error) {
+        console.log("Error in getListFriendRequest controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+}
+const respondToFriendRequestApp = async (req, res) => {
+    try {
+        // const responderId = req.user._id;// Người nhận yêu cầu kết bạn
+        // const requestId = req.params.id;// Người gửi yêu cầu kết bạn
+        const { responderId, requestId, response } = req.body; // 1: Chấp nhận, 0: Từ chối
+        console.log(responderId, requestId, response);
+        // // Kiểm tra xem yêu cầu kết bạn có tồn tại không
+        const requester = await User.findById(requestId);
+        if (!requester) {
+            return res.status(404).json({ error: "Requester not found" });
+        }
+
+        // Kiểm tra xem người nhận yêu cầu kết bạn có tồn tại không
+        const responder = await User.findById(responderId);
+        if (!responder) {
+            return res.status(404).json({ error: "Responder not found" });
+        }
+
+        // Kiểm tra xem yêu cầu kết bạn có tồn tại trong danh sách yêu cầu kết bạn của người nhận không
+        if (!responder.friendRequests.includes(requestId)) {
+            return res.status(400).json({ error: "Friend request not found" });
+        }
+
+        // Nếu responder chấp nhận yêu cầu kết bạn
+        console.log(response);
+        if (response === 1) {
+            // Thêm người gửi yêu cầu vào danh sách bạn bè của người nhận
+            responder.listFriend.push(requestId);
+            await responder.save();
+
+            // Thêm người nhận vào danh sách bạn bè của người gửi yêu cầu
+            requester.listFriend.push(responderId);
+            await requester.save();
+
+            // Xóa yêu cầu kết bạn khỏi danh sách yêu cầu kết bạn của người nhận
+            responder.friendRequests = responder.friendRequests.filter(id => id.toString() !== requestId.toString());
+            await responder.save();
+
+            return res.status(200).json({ message: `You and ${requester.name} are now friends` });
+        }
+
+        return res.status(200).json({ message: `You have rejected friend request from ${requester.name}` });
+
+    } catch (error) {
+        console.log("Error in respondToFriendRequest controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 //Web
 const updateUser = async (req, res) => {
     const { name, gender, birthDate, avatar } = req.body;
     const id = req.params.id;
-    console.log(avatar);
-    console.log(name);
     try {
         const user = req.user; // Lấy thông tin người dùng từ middleware đã đăng nhập thành công
         // Kiểm tra xem người dùng đã đăng nhập hay chưa
@@ -217,5 +314,19 @@ const getProfile = async (req, res) => {
 }
 
 module.exports = {
-    getUser, getFinded, getMessaged, addMessaged, addFinded, editProfile, editAvatar, changePassword, getFriendsByUser,getProfile,updateUser
+    getUser,
+    getFinded,
+    getMessaged,
+    addMessaged,
+    addFinded,
+    editProfile,
+    editAvatar,
+    changePassword,
+    getFriendsByUser,
+    getProfile,
+    updateUser,
+    sendFriendRequestApp,
+    getListFriendRequestIdsSendApp,
+    respondToFriendRequestApp,
+
 };

@@ -85,7 +85,7 @@ export default function PhoneBook() {
                     <View style={{ flexDirection: 'row', alignContent: 'space-between', width: '100%', height: 60, alignItems: 'center', gap: 18 }}>
                         <Image style={{ width: 45, height: 45, borderRadius: 60, border: 'solid 1px black' }} source={require('../../../assets/icon.png')} />
                         <View style={{ width: '60%' }}>
-                            <Text style={{ fontWeight: '450', fontSize: 18 }}>Nguyen Van A</Text>
+                            <Text style={{ fontWeight: '500', fontSize: 18 }}>Nguyen Van A</Text>
                         </View>
                     </View>
                 </View> */}

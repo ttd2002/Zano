@@ -19,7 +19,7 @@ const Group = () => {
                 }}>
                 <View style={{ flexDirection: 'row', alignContent: 'space-between', width: '100%', height: 50, alignItems: 'center', gap: 18 }}>
                     <AntDesign name="addusergroup" size={35} color="black" />
-                    <Text style={{ fontWeight: '450', fontSize: 18 }}>Tạo nhóm mới</Text>
+                    <Text style={{ fontWeight: '500', fontSize: 18 }}>Tạo nhóm mới</Text>
                 </View>
             </TouchableOpacity>
 

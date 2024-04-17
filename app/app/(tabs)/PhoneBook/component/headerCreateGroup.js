@@ -1,6 +1,6 @@
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
-import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useState } from 'react';
@@ -15,6 +15,7 @@ const HeaderCreateGroup = ({ dataCreateGroup, setDataCreateGroup, onChangeText, 
     const navigation = useNavigation();
     const [modalVisible, setModalVisible] = useState(false);
     const [avatar, setAvatar] = useState(null);
+    const [source, setSource] = useState(null);
     const uploadImage = async (mode) => {
         try {
             let result = {};
@@ -36,36 +37,65 @@ const HeaderCreateGroup = ({ dataCreateGroup, setDataCreateGroup, onChangeText, 
                 });
             }
             if (!result.canceled) {
-                await saveImage(result.assets[0].uri);
+                const uri = result.assets[0].uri
+                const type = result.assets[0].mimeType
+                const name = "groupAvatar"
+                const source = { uri, name, type }
+                console.log('source', source);
+                setAvatar(uri)
+                setSource(source)
+                setModalVisible(false)
             }
         } catch (error) {
             console.log("Error uploading Image: " + error)
             setModalVisible(false)
         }
     }
-    const saveImage = async (avatar) => {
-        try {
-            setAvatar(avatar)
-            console.log("anh: ", avatar)
-            editAvatarHandle()
-            setModalVisible(false)
-        } catch (error) {
-            throw error
-        }
-    }
-    const editAvatarHandle = async () => {
-        try {
-            const response = await axios.put(
-                `http://${ipAddress}:3000/users/${userId}/editAvatar`,
-                {
-                    avatar: avatar,
+
+    const handleCreateGroup = async () => {
+        if (dataCreateGroup.members.length < 3) {
+            Alert.alert("Cần ít nhất 3 thành viên để tạo group")
+        } else if (dataCreateGroup.nameGroup.trim() === '') {
+            Alert.alert("Vui lòng nhập tên cho nhóm");
+        } else {
+            const data = new FormData();
+            data.append('groupAvatar', source)
+            data.append('admin', userId) //admin, nameGroup, members, groupAvatar
+            // data.append('members', dataCreateGroup.members)
+            dataCreateGroup.members.forEach(member => {
+                data.append('members[]', member);
+            });
+            data.append('nameGroup', dataCreateGroup.nameGroup)
+            fetch(`http://${ipAddress}:3000/group/createGroupApp`, {
+                method: 'POST',
+                body: data,
+                headers: {
+                    // Authorization: `Bearer ${token}`,
+                    'Accept': 'application/json',
+                    'Content-Type': 'multipart/form-data'
                 }
-            );
-            console.log("Profile updated successfully", response.data);
-        } catch (error) {
-            console.error("Error editing profile", error);
+            }).then(res => res.json()).then(data => {
+                console.log(data.group);
+                if(data.group){
+                    Alert.alert('Tạo group thành công', '', [
+                        {
+                            text: 'OK',
+                            onPress: () => {
+                                router.replace("/(tabs)/Message");
+                            },
+                        },
+                    ]);
+                }else{
+                    Alert.alert('Tạo group thất bại')
+                }
+
+            })
         }
-    };
+
+
+
+
+    }
     return (
         <SafeAreaView style={{ height: 'auto', width: '100%' }}>
             <View style={{ width: '100%', height: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#00abf6', padding: 20 }}>
@@ -77,10 +107,17 @@ const HeaderCreateGroup = ({ dataCreateGroup, setDataCreateGroup, onChangeText, 
                     <AntDesign name="arrowleft" size={24} color="black" />
 
                 </TouchableOpacity>
-                <View style={{ height: 'auto', width: '85%' }}>
+                <View style={{ height: 'auto', width: '65%' }}>
                     <Text style={{ fontWeight: '600', fontSize: 18 }}>Nhóm mới</Text>
                     <Text>Đã chọn: {dataCreateGroup.members.length}</Text>
                 </View>
+                <TouchableOpacity style={{ height: 30, width: '15%', backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}
+                    onPress={() => {
+                        handleCreateGroup();
+                    }}
+                >
+                    <Text style={{ fontWeight: '600', fontSize: 18 }}>Tạo</Text>
+                </TouchableOpacity>
             </View>
 
             <View style={{ width: '100%', height: 75, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'white', padding: 30 }}>

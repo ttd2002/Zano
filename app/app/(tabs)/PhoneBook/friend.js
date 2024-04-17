@@ -2,54 +2,52 @@ import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'expo-router';
 import Icon from '@mdi/react';
-import { mdiAccountMultiple, mdiContacts } from '@mdi/js';
 import { AntDesign, Feather, FontAwesome, FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { jwtDecode } from 'jwt-decode';
 import { ipAddress } from '../../../config/env';
 
 const Friend = () => {
   const router = useRouter();
   const [friends, setFriends] = useState([]);
   const [userId, setUserId] = useState("");
-
+  const [avatar, setAvatar] = useState("");
   useEffect(() => {
     const fetchUser = async () => {
-      const token = await AsyncStorage.getItem("auth");
-      const decodedToken = jwtDecode(token);
-      const userId = decodedToken.userId;
-
+      const userString = await AsyncStorage.getItem("auth");
+      const user = JSON.parse(userString);
+      const userId = user._id;
+      const avatar = user.avatar;
       setUserId(userId);
+      setAvatar(avatar);
     };
     fetchUser();
   }, []);
   useEffect(() => {
-    const fetchFriends = async () => {
-      try {
-        const response = await axios.get(`http://${ipAddress}:3000/users/${userId}/friends`);
-        const friendInitialSort = response.data.friends.sort((a, b) => {
-          const nameA = a.name?.toUpperCase();
-          const nameB = b.name?.toUpperCase();
-          if (nameA < nameB) {
-            return -1;
-          }
-          if (nameA > nameB) {
-            return 1;
-          }
-          return 0;
-        });
-        setFriends(groupByNameInitial(friendInitialSort));
-
-      } catch (error) {
-        console.error('Error fetching friends:', error);
-      }
-
-    };
     fetchFriends();
   }, [userId]);
-  console.log(friends);
+  console.log('listFriend', friends);
+  const fetchFriends = async () => {
+    try {
+      const response = await axios.get(`http://${ipAddress}:3000/users/${userId}/friends`);
+      const friendInitialSort = response.data.friends.sort((a, b) => {
+        const nameA = a.name?.toUpperCase();
+        const nameB = b.name?.toUpperCase();
+        if (nameA < nameB) {
+          return -1;
+        }
+        if (nameA > nameB) {
+          return 1;
+        }
+        return 0;
+      });
+      setFriends(groupByNameInitial(friendInitialSort));
+      // setFriends(response.data.friends)
+    } catch (error) {
+      console.error('Error fetching friends:', error);
+    }
 
+  };
   const groupByNameInitial = (dataList) => {
     const groups = new Map();
     dataList.forEach((item) => {
@@ -101,18 +99,18 @@ const Friend = () => {
 
 
         <View style={{ flexDirection: 'row', width: '100%', height: 54, marginTop: 8, backgroundColor: 'white', padding: 13, gap: 15 }}>
-          <TouchableOpacity style={{ height: 30, width: 80, borderRadius: 20, border: '1px solid grey', alignItems: 'center', justifyContent: 'center' }}
+          <TouchableOpacity style={{ height: 30, width: 200, borderRadius: 20, border: '1px solid grey', alignItems: 'center', justifyContent: 'center' }}
             onPress={() => {
 
             }}>
-            <Text>Tất cả </Text>
+            <Text>Danh sách bạn bè </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={{ height: 30, width: 110, borderRadius: 20, border: '1px solid grey', alignItems: 'center', justifyContent: 'center' }}
+          {/* <TouchableOpacity style={{ height: 30, width: 110, borderRadius: 20, border: '1px solid grey', alignItems: 'center', justifyContent: 'center' }}
             onPress={() => {
 
             }}>
             <Text>Mới truy cập </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
 
@@ -125,7 +123,7 @@ const Friend = () => {
                 {group.map((item, subIndex) => (
                   <View key={subIndex} style={{ width: '100%', height: 'auto', backgroundColor: 'white', padding: 15, marginTop: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={require('../../../assets/icon.png')} />
+                      <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={{ uri: avatar? avatar :  'https://phongreviews.com/wp-content/uploads/2022/11/avatar-facebook-mac-dinh-15.jpg' }} />
                       <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '50%' }}>{item.name}</Text>
                       <Ionicons name="call-outline" size={26} color="black" />
                       <Feather name="video" size={24} color="black" />
@@ -135,7 +133,7 @@ const Friend = () => {
               </View>
             ))
           ) : (
-            <Text style={{ fontWeight: 'bold', fontSize: 18, margin:20 }}>No friends to display</Text>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, margin: 20 }}>No friends to display</Text>
           )}
         </View>
       </ScrollView>
@@ -158,7 +156,7 @@ const styles = StyleSheet.create({
     // justifyContent: 'center',
   },
   HideTextInput: {
-    outlineColor: 'transparent',
+    // outlineColor: 'transparent',
     fontSize: 18,
     color: 'white',
     // position: 'absolute',

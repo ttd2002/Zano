@@ -17,6 +17,7 @@ const Chat = require("./backend/models/conversation");
 const userRoutes = require("./backend/routes/userRoutes");
 const messageRoutes = require("./backend/routes/messageRoutes");
 const authRoutes = require("./backend/routes/authRoutes");
+const groupRoutes = require("./backend/routes/groupRoutes");
 const { connectToMongoDB } = require("./backend/database/connectToMongoDB");
 
 
@@ -75,3 +76,4 @@ http.listen(8000, () => {
 app.use("/users", userRoutes);
 app.use("/mes", messageRoutes);
 app.use("/auth", authRoutes);
+app.use("/group", groupRoutes);

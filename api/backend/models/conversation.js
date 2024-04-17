@@ -1,9 +1,6 @@
 const mongoose = require("mongoose");
 
 const conversationSchema = new mongoose.Schema({
-  conversationId: {
-    type: mongoose.Schema.Types.ObjectId,
-  },
   participants: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -48,7 +45,7 @@ const conversationSchema = new mongoose.Schema({
       },
       type: {
         type: String,
-        enum: ["text", "image", "video", "audio"], // or any other types you want to support
+        enum: ["text", "image", "video", "voice","file"], // or any other types you want to support
         required: true,
       },
       timestamp: {
@@ -61,6 +58,11 @@ const conversationSchema = new mongoose.Schema({
           ref: "User",
         },
       ],
+      recall:{
+        type:Boolean,
+        default:false
+      }
+      
     },
   ],
   updatedAt: {            //cap nhat moi khi co thay doi, dung de sap xep thu tu tin nhan. 

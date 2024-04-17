@@ -40,12 +40,9 @@ const UserChat = ({ item, userId }) => {
     }, []);
     const fetchMessages = async () => {
         try {
-            const senderId = userId;
-            const receiverId = item?._id;
-            const response = await axios.get(`http://${ipAddress}:3000/messages`, {
-
-                //const response = await axios.get("http://10.0.2.2:3000/messages", {
-                params: { senderId, receiverId },
+            const conversationId = item?._id;
+            const response = await axios.get(`http://${ipAddress}:3000/mes/messages/${conversationId}`, {
+                body: {conversationId},
             });
 
             setMessages(response.data);
@@ -53,6 +50,9 @@ const UserChat = ({ item, userId }) => {
             console.error("Error fetching messages:", error);
         }
     };
+    console.log(messages);
+    console.log("conversationId",item._id);
+
     return (
         <Pressable
             onPress={() => {
@@ -63,7 +63,9 @@ const UserChat = ({ item, userId }) => {
 
                         uName: item.name,
                         senderId: userId,
-                        receiverId: item._id,
+                        // receiverId: item._id,
+                        conversationId: item._id,
+                        uAvatar:item.avatar
                     }
                 })
             }}

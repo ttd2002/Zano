@@ -52,13 +52,12 @@ const index = () => {
   const fetchUserMessaged = async () => {
     try {
       const response = await axios.get(
-        `http://${ipAddress}:3000/users/${userId}/messaged`
-
-        //`http://10.0.2.2:3000/users/${userId}/messaged`
+        `http://${ipAddress}:3000/mes/${userId}/messaged`
       );
 
-      const userMessaged = response.data.messaged;
+      const userMessaged = response.data;
       setMessaged(userMessaged);
+      
     } catch (error) {
       console.log("Error", error);
     }
@@ -67,8 +66,6 @@ const index = () => {
     try {
       const response = await axios.get(
         `http://${ipAddress}:3000/users/${userId}/finded`
-
-        //`http://10.0.2.2:3000/users/${userId}/messaged`
       );
 
       const userFinded = response.data.finded;
@@ -166,6 +163,7 @@ const index = () => {
     }
   }
   console.log('get FriendRequest', friendRequestSendIds);
+  console.log("res", messaged);
   return (
     chekcFind ?
       <View style={styles.container}>

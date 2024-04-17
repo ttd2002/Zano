@@ -45,6 +45,7 @@ const HeaderCreateGroup = ({ dataCreateGroup, setDataCreateGroup, onChangeText, 
                 setAvatar(uri)
                 setSource(source)
                 setModalVisible(false)
+                console.log(result);
             }
         } catch (error) {
             console.log("Error uploading Image: " + error)
@@ -53,7 +54,7 @@ const HeaderCreateGroup = ({ dataCreateGroup, setDataCreateGroup, onChangeText, 
     }
 
     const handleCreateGroup = async () => {
-        if (dataCreateGroup.members.length < 3) {
+        if (dataCreateGroup.members.length < 2) {
             Alert.alert("Cần ít nhất 3 thành viên để tạo group")
         } else if (dataCreateGroup.nameGroup.trim() === '') {
             Alert.alert("Vui lòng nhập tên cho nhóm");
@@ -65,6 +66,7 @@ const HeaderCreateGroup = ({ dataCreateGroup, setDataCreateGroup, onChangeText, 
             dataCreateGroup.members.forEach(member => {
                 data.append('members[]', member);
             });
+            data.append('members[]', userId);
             data.append('nameGroup', dataCreateGroup.nameGroup)
             fetch(`http://${ipAddress}:3000/group/createGroupApp`, {
                 method: 'POST',

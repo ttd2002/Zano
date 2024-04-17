@@ -1,25 +1,32 @@
 require("dotenv").config();
-
 const Chat = require("../models/conversation");
 
-const messages= async (req, res) => {
+const messaged = async (req, res) => {
     try {
-        const { senderId, receiverId } = req.query;
-        const messages = await Chat.find({
-            $or: [
-                { senderId: senderId, receiverId: receiverId },
-                { senderId: receiverId, receiverId: senderId },
-            ],
-            deletedBy: { $ne: senderId }
-        }).populate("senderId", "_id name");
-
-
-        res.status(200).json(messages);
+        // const userId = JSON.stringify(req.params.id);
+        // console.log("u",userId);
+        // console.log(req.params);
+        const conversations = await Chat.find({
+            participants: {$in:req.params.id},
+        }).populate("participants", "_id name avatar");
+        console.log("con",conversations);
+        res.status(200).json(conversations);
     } catch (error) {
-        res.status(500).json({ message: "Error in getting messages", error });
+        res.status(500).json({ message: "Error in getting messaged", error });
     }
 };
-
+const messages = async (req, res) => {
+    try {
+        console.log("afg",JSON.stringify(req.params.id));
+        const conversations = await Chat.find({
+            _id:req.params.id
+        });
+        console.log("con",conversations);
+        res.status(200).json(conversations[0].messages);
+    } catch (error) {
+        res.status(500).json({ message: "Error in getting messaged", error });
+    }
+};
 const deleteMessage= async (req, res) => {
     try {
         const { currentUserId, receiverId, timestamp, messageId } = req.body;
@@ -74,5 +81,5 @@ const recallMessage= async (req, res) => {
 };
 
 module.exports = {
-    messages,deleteMessage,recallMessage
+    messaged,deleteMessage,recallMessage,messages
 };

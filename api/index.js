@@ -26,10 +26,10 @@ app.listen(port, () => {
     console.log(`Server is running on ${port}`);
 });
 
-var users = [];
 io.on("connection", (socket) => {
-    socket.on("connected", (userID) => {
-        users[userID] = socket.id;
+    socket.on("joinRoom", (conversationId) => {
+        socket.join(conversationId)
+        console.log(`User joined room ${conversationId}`);
 
     })
     socket.on("requestRender", () => {
@@ -37,27 +37,32 @@ io.on("connection", (socket) => {
     })
     socket.on("sendMessage", async (data) => {
         try {
-            const { senderId, receiverId, message, type } = data;
+            const { senderId, conversationId, message, type, messages } = data;
             console.log("data", data);
-            console.log("data", data);
-            /* if (type === "image") {
-                const imagePath = path.resolve(message.replace('file://', ''));
-                const imageContent = fs.readFileSync(imagePath);
-                console.log("test: ", imageContent)
-                const filePath = `${senderId}_${Date.now().toString()}.jpg`;
-                const params = {
-                    Bucket: bucketName,
-                    Key: filePath,
-                    Body: imageContent,
-                    ACL: 'public-read'
-                };
-                const uploadedImage = await s3.upload(params).promise();
-                contentMessage = uploadedImage.Location;
-            } */
-            const newMessage = new Chat({ senderId, receiverId, message, type });
-            await newMessage.save();
+            var receiverIds = [];
+
+            // await newMessage.save();
+            const conversation = await Chat.findOne({
+                _id: conversationId,
+            })
+            console.log(conversation);
+            receiverIds = conversation.participants.filter(participantId => participantId.toString() !== senderId)
+            console.log("recei", receiverIds);
+            const newMessage = { senderId, receiverIds, message, type };
+
+            conversation.messages.push(newMessage);
+
+
+            await conversation.save();
+            const conversation2 = await Chat.findOne({
+                _id: conversationId,
+            })
+            const messageId = conversation2.messages[conversation.messages.length - 1]._id;
+            console.log("messageId", JSON.stringify(messageId));
+            newMessage._id = JSON.stringify(messageId);
+            newMessage.timestamp = conversation2.messages[conversation.messages.length - 1].timestamp;
             //emit the message to the receiver
-            io.to(users[receiverId]).emit("receiveMessage", newMessage);
+            socket.to(conversationId).emit("receiveMessage", newMessage);
         } catch (error) {
             console.log("Error handling the messages:", error); // In ra lỗi nếu có
         }

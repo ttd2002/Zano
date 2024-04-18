@@ -1,11 +1,13 @@
 const cloudinary = require("cloudinary").v2;
 
 cloudinary.config({
-    cloud_name: 'djxhns7lt',
-    api_key: '956438591229164',
-    api_secret: 'oou9ivdx-VniTGf0FkU9sZKKjyM'
+    cloud_name: 'dbtgez7ua',
+    api_key: '966132724833854',
+    api_secret: 'mYzMyo-X7E8IIF9bXoaDAh1c6h0'
 });
 
-module.exports = cloudinary;
+// const uploadPreset = 'DemoZanoo';
+
+module.exports = { cloudinary };
 
 

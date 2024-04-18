@@ -26,7 +26,7 @@ const index = () => {
   const [token, setToken] = useState("");
   const [user, setUser] = useState([]);
   const [userFilter, setUserFilter] = useState([]);
-
+  // const [sockecId, setSockecId] = useState("");
   const [chekcFind, setCheckFind] = useState(false);
 
 
@@ -57,7 +57,7 @@ const index = () => {
 
       const userMessaged = response.data;
       setMessaged(userMessaged);
-      
+
     } catch (error) {
       console.log("Error", error);
     }
@@ -114,6 +114,28 @@ const index = () => {
       console.log("error", error);
     }
   };
+  const handleCreateConversationSingleChat = async (receiver) => {
+    try {
+      const response = await axios.post(`http://${ipAddress}:3000/mes/createConversationApp`, {
+        senderId: userId,
+        receiverId: receiver._id,
+      });
+      console.log("handleCreateConversationSingleChat", response.data.conversation._id);
+      const conversationId = response.data.conversation._id;
+      router.navigate({
+        pathname: '/Message/chatRoom',
+        params: {
+          uName: receiver.name,
+          senderId: userId,
+          // receiverId: item._id,
+          conversationId: conversationId,
+          uAvatar: receiver.avatar
+        }
+      })
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
   const handleSendFriendRequest = async (receiverId) => {
     try {
       await axios.post(`http://${ipAddress}:3000/users/app/sendFriendRequest`, {
@@ -135,27 +157,27 @@ const index = () => {
       console.log("error", error);
     }
   }
-  const handleAcceptFriendRequest  = async (requestId) => {
-    console.log('requestId',requestId);
+  const handleAcceptFriendRequest = async (requestId) => {
+    console.log('requestId', requestId);
     try {
       await axios.post(`http://${ipAddress}:3000/users/app/respondToFriendRequest`, {
         responderId: userId,
         requestId: requestId,
-        response:1
+        response: 1
       });
-      setListFriend(newListFriend => [...newListFriend,requestId]);
+      setListFriend(newListFriend => [...newListFriend, requestId]);
       setFriendRequests(prevFriendRequests => prevFriendRequests.filter(id => id !== requestId));
     } catch (error) {
       console.log("error", error);
     }
   }
   const handleRejectFriendRequest = async (requestId) => {
-    console.log('requestId',requestId);
+    console.log('requestId', requestId);
     try {
       await axios.post(`http://${ipAddress}:3000/users/app/respondToFriendRequest`, {
         responderId: userId,
         requestId: requestId,
-        response:0
+        response: 0
       });
       setFriendRequests(prevFriendRequests => prevFriendRequests.filter(id => id !== requestId));
     } catch (error) {
@@ -196,15 +218,8 @@ const index = () => {
             renderItem={({ item }) =>
               userId === item._id ? <View></View> :
                 <Pressable onPress={() => {
-                  handleFinded(item._id)
-                  router.navigate({
-                    pathname: '/Message/chatRoom',
-                    params: {
-                      uName: item.name,
-                      senderId: userId,
-                      receiverId: item._id,
-                    }
-                  })
+                  handleFinded(item._id);
+                  handleCreateConversationSingleChat(item);
                 }}>
                   <View style={{ borderBottomWidth: 1, alignItems: 'center', borderBottomColor: 'grey', height: 80, width: 400, flexDirection: 'row', gap: 15 }}>
                     <Image style={{
@@ -234,7 +249,7 @@ const index = () => {
                           }}>
                           <Text style={{ fontSize: 16, color: 'white' }}>Đồng ý</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={{ width: 80, height: 30, backgroundColor: 'blue', borderRadius: 5, alignItems: 'center', justifyContent: 'center', marginTop:5 }}
+                        <TouchableOpacity style={{ width: 80, height: 30, backgroundColor: 'blue', borderRadius: 5, alignItems: 'center', justifyContent: 'center', marginTop: 5 }}
                           onPress={() => {
                             handleRejectFriendRequest(item._id);
                           }}>
@@ -245,7 +260,7 @@ const index = () => {
                     {listFriend.includes(item._id) && (
                       <TouchableOpacity style={{ width: 80, height: 30, backgroundColor: 'red', borderRadius: 5, alignItems: 'center', justifyContent: 'center' }}
                         onPress={() => {
-                          handleSendFriendRequest(item._id);
+                          // handleSendFriendRequest(item._id);
                         }}>
                         <Text style={{ fontSize: 16, color: 'white' }}>Hủy bạn</Text>
                       </TouchableOpacity>
@@ -259,7 +274,7 @@ const index = () => {
                         <Text style={{ fontSize: 16, color: 'white' }}>Kết bạn</Text>
                       </TouchableOpacity>
                     )}
-                    
+
 
                   </View>
                 </Pressable>
@@ -280,14 +295,7 @@ const index = () => {
                     alert("myself")
                   }
                   else {
-                    router.navigate({
-                      pathname: '/Message/chatRoom',
-                      params: {
-                        uName: item.name,
-                        senderId: userId,
-                        receiverId: item._id,
-                      }
-                    })
+                    handleCreateConversationSingleChat(item);
                   }
                 }}>
                   <View style={{ alignItems: 'center', height: 100, width: 100, gap: 5 }}>

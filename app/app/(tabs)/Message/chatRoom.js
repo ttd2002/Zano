@@ -29,6 +29,7 @@ const chatRoom = () => {
 
     const [selectedMessage, setSelectedMessage] = useState(null);
     const [showLongPressView, setShowLongPressView] = useState(false);
+    const [source, setSource] = useState(null);
 
     const video = useRef(null)
     socket.on("connection", () => {
@@ -122,15 +123,15 @@ const chatRoom = () => {
                 setMessages(previousMessages => GiftedChat.append(previousMessages, newMess));
             }
         };
-    
+
         socket.on("receiveMessage", receiveMessageHandler);
-    
+
         // Xóa bỏ listener khi component unmount
         return () => {
             socket.off("receiveMessage", receiveMessageHandler);
         };
     }, [socket, params, messages]); // Đảm bảo cung cấp tất cả các dependency cần thiết
-    
+
 
 
     useEffect(() => {
@@ -235,7 +236,7 @@ const chatRoom = () => {
         }
         else {
             const message = messages.length > 0 ? messages[messages.length - 1].text : null;
-            socket.emit("sendMessage", { senderId, conversationId, message, type, messages });
+            socket.emit("sendMessage", { senderId, conversationId, message, type });
 
         }
         // const hasNoMessages = await checkFirstMessage();
@@ -265,28 +266,58 @@ const chatRoom = () => {
                 });
             }
             if (!result.canceled) {
-                await saveImage(result.assets[0].uri);
+                const uri = result.assets[0].uri
+                const type = result.assets[0].mimeType
+                const name = "imageChat"
+                const source = { uri, name, type }
+                console.log('source', source);
+                // setAvatar(uri)
+                // setSource(source)
+                // setModalVisible(false)
+                console.log(result);
+                const data = new FormData();
+                data.append('imageChat', source)
+                fetch(`http://${ipAddress}:3000/mes/uploadImageApp`, {
+                    method: 'POST',
+                    body: data,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }).then(res => res.json()).then(data => {
+                    console.log(data);
+                    const messages = {
+                        _id: Math.random().toString(36).substring(7),
+                        image: data.link,
+                        createdAt: new Date(),
+                        user: {
+                            _id: params?.senderId,
+                        },
+                    };
+                    onSend(messages, params?.senderId, params?.conversationId, "image")
+
+                })
             }
         } catch (error) {
             console.log("Error uploading Image: " + error)
             setModalVisible(false)
         }
     }
-    const saveImage = async (imageUri) => {
-        try {
-            const messages = {
-                _id: Math.random().toString(36).substring(7),
-                image: imageUri,
-                createdAt: new Date(),
-                user: {
-                    _id: params?.receiverId,
-                },
-            };
-            onSend(messages, params?.senderId, params?.receiverId, "image")
-        } catch (error) {
-            throw error
-        }
-    }
+    // const saveImage = async (imageUri) => {
+    //     try {
+    //         const messages = {
+    //             _id: Math.random().toString(36).substring(7),
+    //             image: imageUri,
+    //             createdAt: new Date(),
+    //             user: {
+    //                 _id: params?.receiverId,
+    //             },
+    //         };
+    //         onSend(messages, params?.senderId, params?.receiverId, "image")
+    //     } catch (error) {
+    //         throw error
+    //     }
+    // }
     const pickVideo = async () => {
         try {
             await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -298,16 +329,38 @@ const chatRoom = () => {
             });
 
             if (!result.canceled) {
-                const messages = {
-                    _id: Math.random().toString(36).substring(7),
-                    video: result.assets[0].uri,
-                    createdAt: new Date(),
-                    user: {
-                        _id: params?.receiverId,
-                    },
-                };
 
-                onSend(messages, params?.senderId, params?.receiverId, "video")
+                const uri = result.assets[0].uri
+                const type = result.assets[0].mimeType
+                const name = result.assets[0].fileName
+                const source = { uri, name, type }
+                console.log('source', source);
+                console.log(result);
+                const data = new FormData();
+                data.append('file', source);
+                // data.append('imageChat', source);
+                // fetch(`http://${ipAddress}:3000/mes/uploadImageApp`, {
+                //     method: 'POST',
+                fetch(`https://api.cloudinary.com/v1_1/dbtgez7ua/video/upload?upload_preset=DemoZanoo`, {
+                    method: 'POST',
+                    body: data,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }).then(res => res).then(data => {
+                    console.log("fdhd", data);
+                    // const messages = {
+                    //     _id: Math.random().toString(36).substring(7),
+                    //     video: data.uri,
+                    //     createdAt: new Date(),
+                    //     user: {
+                    //         _id: params?.senderId,
+                    //     },
+                    // };
+                    // onSend(messages, params?.senderId, params?.conversationId, "video")
+
+                })
             }
         } catch (error) {
             console.log('Error selecting video: ', error);

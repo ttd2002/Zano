@@ -11,7 +11,7 @@ const UserChat = ({ item, userId }) => {
         const n = messages.length;
         return messages[n - 1];
     }
-    console.log('item',item);
+    console.log('item', item);
     const getContentMessage = () => {
         let messageContent;
         switch (lastMessage.type) {
@@ -43,7 +43,7 @@ const UserChat = ({ item, userId }) => {
         try {
             const conversationId = item?._id;
             const response = await axios.get(`http://${ipAddress}:3000/mes/messages/${conversationId}`, {
-                body: {conversationId},
+                body: { conversationId },
             });
 
             setMessages(response.data);
@@ -52,7 +52,7 @@ const UserChat = ({ item, userId }) => {
         }
     };
     console.log(messages);
-    console.log("conversationId",item._id);
+    console.log("conversationId", item._id);
 
     return (
         <Pressable
@@ -61,12 +61,11 @@ const UserChat = ({ item, userId }) => {
 
                     pathname: '/Message/chatRoom',
                     params: {
-
                         uName: item.name,
                         senderId: userId,
                         // receiverId: item._id,
                         conversationId: item._id,
-                        uAvatar:item.avatar
+                        uAvatar: item.avatar,
                     }
                 })
             }}

@@ -35,6 +35,26 @@ const messaged = async (req, res) => {
         res.status(500).json({ message: "Error in getting messaged", error });
     }
 };
+const getOneConversationApp = async (req, res) => {
+    try {
+        const { conversationId } = req.query;
+        // console.log("conversationId", conversationId);
+        const conversation = await Chat.findById(conversationId).populate("participants", "_id name avatar");
+        if (conversation.isGroupChat === false) {
+            for (let j = 0; j < conversation.participants.length; j++) {
+                const participant = conversation.participants[j];
+                if (participant._id.toString() !== req.params.id) {
+                    conversation.name = participant.name;
+                    conversation.avatar = participant.avatar;
+                }
+            }
+        }
+
+        res.status(200).json(conversation);
+    } catch (error) {
+        res.status(500).json({ message: "Error in getting conversation", error });
+    }
+};
 
 const messages = async (req, res) => {
     try {
@@ -138,7 +158,7 @@ const uploadImageApp = async (req, res) => {
         const { imageChat } = req.body;
         // console.log(abc);
         var imageLink = '';
-        console.log("req",req.file);
+        console.log("req", req.file);
         if (req.file) {
             imageLink = req.file.path;
 
@@ -147,7 +167,7 @@ const uploadImageApp = async (req, res) => {
         }
 
         console.log("imageLink", imageLink);
-        
+
         res.status(201).json({ link: imageLink });
     } catch (error) {
         console.log("Error creating group", error);
@@ -155,5 +175,5 @@ const uploadImageApp = async (req, res) => {
     }
 };
 module.exports = {
-    messaged, deleteMessage, recallMessage, messages, createConversationSingleChatApp, uploadImageApp
+    messaged, deleteMessage, recallMessage, messages, createConversationSingleChatApp, uploadImageApp, getOneConversationApp
 };

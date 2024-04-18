@@ -347,7 +347,7 @@ const chatRoom = () => {
                         'Content-Type': 'multipart/form-data'
                     }
                 }).then(res => res.json()).then(data => {
-                    console.log("fdhd", data.url);
+                    console.log("fdhd", data);
                     const messages = {
                         _id: Math.random().toString(36).substring(7),
                         video: data.url,
@@ -553,10 +553,21 @@ const chatRoom = () => {
     return (
         <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#e2e8f1" }}>
             <View style={{ backgroundColor: '#00abf6', justifyContent: 'flex-start', alignItems: 'center', flexDirection: "row", alignItems: "center", gap: 10, height: 50 }}>
-                <TouchableOpacity onPress={() => { router.replace('/Message') }}>
+                <TouchableOpacity style={{ marginLeft: 5 }} onPress={() => { router.replace('/Message') }}>
                     <Ionicons name="chevron-back" size={24} color="white" />
                 </TouchableOpacity>
-                <Text style={{ fontSize: 20, color: 'white' }}>{params?.uName}</Text>
+                <Text style={{ fontSize: 20, color: 'white', width: '75%' }}>{params?.uName}</Text>
+                <TouchableOpacity onPress={() => {
+                    router.navigate({
+                        pathname: '/Message/options',
+                        params: {
+                            conversationId: params?.conversationId,
+                            senderId: params?.senderId,
+                        }
+                    })
+                }}>
+                    <Ionicons name="options-outline" size={24} color="white" />
+                </TouchableOpacity>
             </View>
             <GiftedChat
                 messages={messages}

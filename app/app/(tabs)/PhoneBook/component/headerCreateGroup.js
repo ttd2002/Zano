@@ -10,12 +10,15 @@ import UploadModal from './UploadModal';
 import * as ImagePicker from "expo-image-picker"
 import axios from 'axios';
 import { ipAddress } from '../../../../config/env';
+import { io } from 'socket.io-client';
 const HeaderCreateGroup = ({ dataCreateGroup, setDataCreateGroup, onChangeText, userId }) => {
     const router = useRouter();
     const navigation = useNavigation();
     const [modalVisible, setModalVisible] = useState(false);
     const [avatar, setAvatar] = useState(null);
     const [source, setSource] = useState(null);
+    const socket = io(`http://${ipAddress}:8000`);
+
     const uploadImage = async (mode) => {
         try {
             let result = {};
@@ -83,7 +86,8 @@ const HeaderCreateGroup = ({ dataCreateGroup, setDataCreateGroup, onChangeText, 
                         {
                             text: 'OK',
                             onPress: () => {
-                                router.replace("/(tabs)/Message");
+                                socket.emit("requestRender");
+                                router.replace("/Message");
                             },
                         },
                     ]);

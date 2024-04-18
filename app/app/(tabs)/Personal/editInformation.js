@@ -164,7 +164,8 @@ const EditInformation = () => {
         const data = new FormData();
         
         data.append('avatar', photo)
-        data.append('name', 'acccc')
+        // data.append('name', 'acccc')
+        console.log(data);
         // data.append('file', photo)
         // data.append("upload_preset", "DemoZanoo")
         // data.append("cloud_name", "dbtgez7ua")

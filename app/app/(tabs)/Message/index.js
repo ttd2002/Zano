@@ -11,10 +11,12 @@ import { ipAddress } from '../../../config/env';
 import { io } from "socket.io-client"
 global.atob = decode;
 const index = () => {
-  const socket = io("http://192.168.56.1:8000");
+  const socket = io(`http://${ipAddress}:8000`);
+
   socket.on("Render", () => {
     fetchUserMessaged();
   })
+  
   const router = useRouter();
   const [userId, setUserId] = useState("");
   const [userPhone, setUserPhone] = useState("");
@@ -28,7 +30,6 @@ const index = () => {
   const [userFilter, setUserFilter] = useState([]);
   // const [sockecId, setSockecId] = useState("");
   const [chekcFind, setCheckFind] = useState(false);
-
 
   useEffect(() => {
     const fetchUser = async () => {

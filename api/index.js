@@ -35,6 +35,7 @@ io.on("connection", (socket) => {
     socket.on("requestRender", () => {
         io.emit("Render")
     })
+    
     socket.on("sendMessage", async (data) => {
         try {
             const { senderId, conversationId, message, type } = data;

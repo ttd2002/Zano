@@ -1,23 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Text, View, KeyboardAvoidingView, TouchableOpacity } from 'react-native';
+import { Text, View, KeyboardAvoidingView, TouchableOpacity, StyleSheet, Image, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons, Entypo, AntDesign } from '@expo/vector-icons';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 import { ipAddress } from '../../../config/env';
-import { GiftedChat, Send } from 'react-native-gifted-chat';
+import { GiftedChat, Message, Send } from 'react-native-gifted-chat';
 import * as VideoPicker from 'expo-image-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import CustomVideoMessage from './CustomVideoMessage';
 import * as DocumentPicker from 'expo-document-picker';
 import { Video } from 'expo-av';
-
 import CustomDocumentMessage from './CustomDocumentMessage';
 const chatRoom = () => {
     const [recording, setRecording] = useState();
-    const [voice, setVoice] = useState();
 
     const navigation = useNavigation();
     const [messages, setMessages] = useState([])
@@ -230,7 +228,7 @@ const chatRoom = () => {
 
         }
         if (type === "file") {
-            const message = messages.document.assets[0].uri;
+            const message = messages.document;
             socket.emit("sendMessage", { senderId, conversationId, message, type });
 
         }
@@ -348,17 +346,17 @@ const chatRoom = () => {
                         'Accept': 'application/json',
                         'Content-Type': 'multipart/form-data'
                     }
-                }).then(res => res).then(data => {
-                    console.log("fdhd", data);
-                    // const messages = {
-                    //     _id: Math.random().toString(36).substring(7),
-                    //     video: data.uri,
-                    //     createdAt: new Date(),
-                    //     user: {
-                    //         _id: params?.senderId,
-                    //     },
-                    // };
-                    // onSend(messages, params?.senderId, params?.conversationId, "video")
+                }).then(res => res.json()).then(data => {
+                    console.log("fdhd", data.url);
+                    const messages = {
+                        _id: Math.random().toString(36).substring(7),
+                        video: data.url,
+                        createdAt: new Date(),
+                        user: {
+                            _id: params?.senderId,
+                        },
+                    };
+                    onSend(messages, params?.senderId, params?.conversationId, "video")
 
                 })
             }
@@ -376,13 +374,20 @@ const chatRoom = () => {
                 });
                 const { recording } = await Audio.Recording.createAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
                 setRecording(recording);
+                setTimeout(async () => {
+                    await stopRecording(recording);
+                }, 5000);
             }
         } catch (err) { }
     }
 
-    async function stopRecording() {
+    async function stopRecording(recording) {
+        if (!recording) {
+            // Handle case where recording is undefined
+            console.error("Recording is undefined");
+            return;
+        }
         setRecording(undefined);
-
         await recording.stopAndUnloadAsync();
         const { sound, status } = await recording.createNewLoadedSoundAsync();
         const record = {
@@ -390,16 +395,49 @@ const chatRoom = () => {
             duration: getDurationFormatted(status.durationMillis),
             file: recording.getURI()
         };
-        setVoice(record)
-        const messages = {
-            _id: Math.random().toString(36).substring(7),
-            audio: record.file,
-            createdAt: new Date(),
-            user: {
-                _id: params?.receiverId,
-            },
-        };
-        onSend(messages, params?.senderId, params?.receiverId, "voice")
+        const uri = record.file;
+        const extension = uri.substring(uri.lastIndexOf(".") + 1);
+
+        let type;
+        switch (extension.toLowerCase()) {
+            case "m4a":
+                type = "audio/mp4";
+                break;
+            case "mp3":
+                type = "audio/mpeg";
+                break;
+            default:
+                type = "audio/mp4";
+        }
+
+        const name = uri.substring(uri.lastIndexOf("/") + 1);
+        const source = { uri, name, type };
+        console.log('source audio', source);
+        const data = new FormData();
+        data.append('file', source);
+        fetch(`https://api.cloudinary.com/v1_1/dbtgez7ua/auto/upload?upload_preset=DemoZanoo`, {
+            method: 'POST',
+            body: data,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'multipart/form-data'
+            }
+        }).then(res => res.json()).then(data => {
+            console.log("fdhd", data.secure_url);
+            const messages = {
+                _id: Math.random().toString(36).substring(7),
+                audio: data.secure_url,
+                createdAt: new Date(),
+                user: {
+                    _id: params?.senderId,
+                },
+            };
+            onSend(messages, params?.senderId, params?.conversationId, "voice")
+
+        })
+            .catch(error => {
+                console.error("Error âm thanh:", error);
+            });
     }
 
     function getDurationFormatted(milliseconds) {
@@ -421,15 +459,38 @@ const chatRoom = () => {
             const response = await DocumentPicker.getDocumentAsync({
                 presentationStyle: 'fullScreen',
             });
-            const messages = {
-                _id: Math.random().toString(36).substring(9),
-                document: response,
-                createdAt: new Date(),
-                user: {
-                    _id: params?.receiverId,
-                },
-            };
-            onSend(messages, params?.senderId, params?.receiverId, "file");
+            console.log("ress tài liệu", response)
+            const uri = response.assets[0].uri;
+            const type = response.assets[0].mimeType;
+            const name = response.assets[0].name;
+            const source = { uri, name, type };
+            console.log('source tài liệu', source);
+            const data = new FormData();
+            data.append('file', source);
+            fetch(`https://api.cloudinary.com/v1_1/dbtgez7ua/auto/upload?upload_preset=DemoZanoo`, {
+                method: 'POST',
+                body: data,
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'multipart/form-data'
+                }
+            }).then(res => res.json()).then(data => {
+                console.log("fdhd", data.url);
+                const messages = {
+                    _id: Math.random().toString(36).substring(9),
+                    document: data.url,
+                    createdAt: new Date(),
+                    user: {
+                        _id: params?.senderId,
+                    },
+                };
+                onSend(messages, params?.senderId, params?.conversationId, "file")
+
+            })
+                .catch(error => {
+                    console.error("Error file tài liệu:", error);
+                });
+
         } catch (err) {
             console.warn(err);
         }
@@ -471,6 +532,24 @@ const chatRoom = () => {
     //     setShowLongPressView(true);
 
     // };
+    
+    const getFileIcon = (type) => {
+        switch (type) {
+            case 'pdf':
+                return require('../../../assets/pdf.png');
+            case 'doc':
+            case 'docx':
+                return require('../../../assets/dox.png');
+            case 'xls':
+            case 'xlsx':
+                return require('../../../assets/excel.jpg');
+            case 'ppt':
+            case 'pptx':
+                return require('../../../assets/pp.png');
+            default:
+                return require('../../../assets/dox.png');
+        }
+    };
     return (
         <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#e2e8f1" }}>
             <View style={{ backgroundColor: '#00abf6', justifyContent: 'flex-start', alignItems: 'center', flexDirection: "row", alignItems: "center", gap: 10, height: 50 }}>
@@ -531,7 +610,24 @@ const chatRoom = () => {
                     console.log('Long pressed on message:', message);
                     handleLongPress(context, message)
                 }}
+                renderMessage={(props) => {
+                    // Kiểm tra nếu tin nhắn có chứa tài liệu
+                    const documetLink = props.currentMessage.document
+                    console.log(props.currentMessage)
+                    if (props.currentMessage.document) {
+                        return <TouchableOpacity onPress={()=>{Linking.openURL(props.currentMessage.document)}}>
+                            <View style={props.currentMessage.user._id === params.senderId ? styles.containerSender : styles.containerReceiver}>
+                                <View style={{ backgroundColor: '#f0f0f0' }}>
+                                    <Image source={getFileIcon(documetLink.substring(documetLink.lastIndexOf(".") + 1))} style={styles.icon} />
+                                    <Text>{documetLink.substring(documetLink.lastIndexOf(".") + 1)}</Text>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    }
 
+                    // Nếu không, sử dụng render mặc định của Gifted Chat
+                    return <Message {...props} />;
+                }}
             />
             {/* {showLongPressView && (
                 <View style={{ backgroundColor: 'white', position: 'absolute', bottom: 0, left: 0, right: 0, justifyContent: 'center', alignItems: 'center' }}>
@@ -574,3 +670,31 @@ const chatRoom = () => {
 
 export default chatRoom
 
+const styles = StyleSheet.create({
+    containerSender: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 10,
+        borderRadius: 5,
+        marginBottom: 10,
+        justifyContent: 'flex-end',
+    },
+    containerReceiver: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 10,
+        borderRadius: 5,
+        marginBottom: 10,
+        justifyContent: 'flex-start',
+        marginLeft: 44
+    },
+    icon: {
+        width: 30,
+        height: 30,
+        marginRight: 10,
+    },
+    fileName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+});

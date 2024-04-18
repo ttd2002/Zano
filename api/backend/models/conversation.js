@@ -19,9 +19,9 @@ const conversationSchema = new mongoose.Schema({
   },
   name: {
     type: String,
-    require: function () {
-      return this.isGroupChat == true
-    }
+    // require: function () {
+    //   return this.isGroupChat == true
+    // }
   },
   avatar: {
     type: String,

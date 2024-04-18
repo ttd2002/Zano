@@ -37,7 +37,7 @@ io.on("connection", (socket) => {
     })
     socket.on("sendMessage", async (data) => {
         try {
-            const { senderId, conversationId, message, type, messages } = data;
+            const { senderId, conversationId, message, type } = data;
             console.log("data", data);
             var receiverIds = [];
 
@@ -46,7 +46,7 @@ io.on("connection", (socket) => {
                 _id: conversationId,
             })
             console.log(conversation);
-            receiverIds = conversation.participants.filter(participantId => participantId.toString() !== senderId)
+            receiverIds = conversation.participants.filter(participantId => participantId._id.toString() !== senderId)
             console.log("recei", receiverIds);
             const newMessage = { senderId, receiverIds, message, type };
 

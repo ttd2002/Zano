@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 require("dotenv").config();
-const protectRoute= require("../middlewares/auth.js");
-const { getUser, getFinded, getMessaged, addMessaged, addFinded, editProfile, editAvatar, changePassword, getFriendsByUser, getProfile, updateUser, sendFriendRequestApp, getListFriendRequestIdsSendApp, respondToFriendRequestApp } = require("../controllers/userController");
+const protectRoute = require("../middlewares/auth.js");
+const { getUser, getFinded, getMessaged, addMessaged, addFinded, editProfile, editAvatar, changePassword, getFriendsByUser, getProfile, updateUser, sendFriendRequestApp, getListFriendRequestIdsSendApp, respondToFriendRequestApp, getAllUsers, getListUsers } = require("../controllers/userController");
 const { uploadAvatarMiddleware } = require("../middlewares/uploadAvatar.js");
 const { handleFileSizeError } = require("../middlewares/uploadImages.js");
 
@@ -19,7 +19,8 @@ router.post("/app/sendFriendRequest", sendFriendRequestApp);
 router.get("/app/getFriendRequestIdsSend/:id", getListFriendRequestIdsSendApp);
 router.post("/app/respondToFriendRequest", respondToFriendRequestApp);
 //web
-router.get("/getProfile",protectRoute, getProfile);
-router.put("/updateUser/:id",protectRoute,uploadAvatarMiddleware.single("avatar"),handleFileSizeError,updateUser)
-
+router.get("/getProfile", protectRoute, getProfile);
+router.put("/updateUser/:id", protectRoute, uploadAvatarMiddleware.single("avatar"), handleFileSizeError, updateUser)
+router.get("/getAllUsers", protectRoute, getAllUsers);
+router.get("/getListUsers",protectRoute, getListUsers);
 module.exports = router;

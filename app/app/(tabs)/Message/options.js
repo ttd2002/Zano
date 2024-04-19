@@ -157,6 +157,15 @@ const Options = () => {
     return (
         <View style={{ flex: 1, paddingHorizontal: 20 }}>
             {/* Avatar và button đổi avatar */}
+
+            {conversation.isGroupChat === true && (
+                <TouchableOpacity
+                    style={{ backgroundColor: '#00abf6', justifyContent: 'center', alignItems: 'center', height: 40, marginTop: 10 }}
+                    onPress={() => { setModalAddMemberVisible(true); }}
+                >
+                    <Text style={{ color: 'white' }}>Thêm thành viên</Text>
+                </TouchableOpacity>
+            )}
             {isAdmin === true && (
                 <View>
                     <View style={{ alignItems: 'center', marginTop: 20 }}>
@@ -205,12 +214,7 @@ const Options = () => {
                         </TouchableOpacity>
 
                         {/* Button thêm thành viên */}
-                        <TouchableOpacity
-                            style={{ backgroundColor: '#00abf6', justifyContent: 'center', alignItems: 'center', height: 40, marginTop: 10 }}
-                            onPress={() => { setModalAddMemberVisible(true); }}
-                        >
-                            <Text style={{ color: 'white' }}>Thêm thành viên</Text>
-                        </TouchableOpacity>
+
 
                         {/* Button xóa thành viên */}
                         <TouchableOpacity

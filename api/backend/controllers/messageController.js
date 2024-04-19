@@ -58,16 +58,26 @@ const getOneConversationApp = async (req, res) => {
 
 const messages = async (req, res) => {
     try {
-        console.log("afg", JSON.stringify(req.params.id));
+        const { conversationId, senderId } = req.query;
+        console.log("conversationId", senderId);
         const conversations = await Chat.find({
-            _id: req.params.id
+            _id: conversationId,
         }).populate("participants", "_id name avatar");
-        // console.log("con", conversations);
-        res.status(200).json(conversations[0].messages);
+        let data = conversations[0].messages.filter(message => !message.deletedBy.includes(senderId));
+        for (let i = 0; i < data.length; i++) {
+            if (data[i].recall) {
+                data[i].message = 'Tin nhắn đã được thu hồi';
+                data[i].type = 'text'
+            }
+        }
+
+        
+        res.status(200).json(data);
     } catch (error) {
-        res.status(500).json({ message: "Error in getting messaged", error });
+        res.status(500).json({ message: "Error in getting messages", error });
     }
 };
+
 const createConversationSingleChatApp = async (req, res) => {
     try {
         const { senderId, receiverId } = req.body;
@@ -103,51 +113,76 @@ const createConversationSingleChatApp = async (req, res) => {
 };
 const deleteMessage = async (req, res) => {
     try {
-        const { currentUserId, receiverId, timestamp, messageId } = req.body;
+        const { currentUserId, messageId, conversationId } = req.body;
+        console.log("currentUserId", currentUserId);
+        console.log("messageId", messageId);
+        console.log("conversationId", conversationId);
+        // Tìm cuộc trò chuyện dựa trên conversationId
+        const conversation = await Chat.findById(conversationId);
 
-        const message = await Chat.findOneAndUpdate(
-            {
-                _id: messageId,
-                // senderId: currentUserId, 
-                // receiverId: receiverId, 
-                // timestamp: timestamp 
-            },
-            { $push: { deletedBy: currentUserId } },
-        );
+        if (!conversation) {
+            return res.status(404).json({ message: "Conversation not found" });
+        }
+        console.log("conversation", conversation.messages.map(message => message._id.toString()));
+        // Tìm và cập nhật tin nhắn
+        let messageIndex = -1;
+        const updatedMessages = conversation.messages.map((message, index) => {
+            if (message._id.equals(messageId)) {
+                messageIndex = index;
+                // Kiểm tra xem tin nhắn đã được xóa bởi người dùng hiện tại chưa
+                if (!message.deletedBy.includes(currentUserId)) {
+                    message.deletedBy.push(currentUserId);
+                }
+            }
+            return message;
+        });
 
-        if (!message) {
+        console.log("updateMas", updatedMessages);
+
+        if (messageIndex === -1) {
             return res.status(404).json({ message: "Message not found" });
         }
+        // Cập nhật thông tin cuộc trò chuyện
+        conversation.messages = updatedMessages;
+        const updatedConversation = await conversation.save();
 
-        return res.sendStatus(200);
+        return res.status(200).json({ message: "Message deleted successfully", conversation: updatedConversation });
     } catch (error) {
         return res.status(500).json({ message: "Error deleting message", error });
     }
 };
 
 
+
+
 const recallMessage = async (req, res) => {
     try {
-        const { currentUserId, receiverId, timestamp, messageId } = req.body;
+        const {
+            currentUserId,
+            // receiverId,
+            // timestamp,
+            messageId,
+            conversationId } = req.body;
 
-        const message = await Chat.findOneAndUpdate(
-            {
-                _id: messageId,
-                // senderId: currentUserId, 
-                // receiverId: receiverId, 
-                // timestamp: timestamp 
-            },
-            {
-                $set: {
-                    message: "Tin nhắn đã thu hồi",
-                    type: "text",
-                }
-            },
-        );
+        const conversation = await Chat.findById(conversationId);
 
-        if (!message) {
-            return res.status(404).json({ message: "Message not found" });
+        if (!conversation) {
+            return res.status(404).json({ message: "Conversation not found" });
         }
+
+
+        let messageIndex = -1;
+        const updatedMessages = conversation.messages.map((message, index) => {
+            if (message._id.equals(messageId)) {
+                messageIndex = index;
+                // Kiểm tra xem tin nhắn đã được xóa bởi người dùng hiện tại chưa
+                message.recall = true;
+            }
+            return message;
+        });
+
+        conversation.messages = updatedMessages;
+        const updatedConversation = await conversation.save();
         return res.sendStatus(200);
     } catch (error) {
         return res.status(500).json({ message: "Error deleting message", error });

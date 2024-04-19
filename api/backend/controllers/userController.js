@@ -1,7 +1,7 @@
 const User = require("../models/user");
 // const { secretKey, jwt } = require("../utils/generateToken");
 require("dotenv").config();
-
+const Chat = require("../models/conversation");
 
 const getUser = async (req, res) => {
     try {
@@ -312,7 +312,34 @@ const getProfile = async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 }
+const getAllUsers = async (req, res) => {
+    try {
+        // Lấy thông tin người dùng đang đăng nhập từ request
+        const currentUser = req.user;
 
+        // Lấy tất cả người dùng, loại bỏ trường password
+        const users = await User.find({ _id: { $ne: currentUser._id } }).select("-password");
+
+        res.status(200).json(users);
+    } catch (error) {
+        console.log("Error in getAllUsers controller", error.message);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+const getListUsers = async (req, res) => {
+    try {
+        const loggedUserId = req.user._id;
+        const listConversations = await Chat.find({
+                        participants: {$in:loggedUserId.toString()},
+                    }).populate("participants", "_id name avatar");
+                    console.log("con",listConversations.participants);
+
+        res.status(200).json(listConversations);
+    } catch (error) {
+        console.log("Error in getListUsers controller", error.message);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
 module.exports = {
     getUser,
     getFinded,
@@ -328,5 +355,6 @@ module.exports = {
     sendFriendRequestApp,
     getListFriendRequestIdsSendApp,
     respondToFriendRequestApp,
-
+    getListUsers,
+    getAllUsers,
 };

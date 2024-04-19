@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
             const loginId = localStorage.getItem("loginId");
             
             const res = await fetch(
-                `http://localhost:3000/users/updateUser/${loginId}`,
+                `http://192.168.137.211:3000/users/updateUser/${loginId}`,
                 {
                     method: "PUT",
                     headers: {

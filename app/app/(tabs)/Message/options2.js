@@ -64,6 +64,7 @@ const Options2 = ({ type, conversation, userId }) => {
     console.log('userId', userId);
     console.log('participants', conversation.participants);
     console.log('listAdmin', conversation.listAdmins);
+    
     console.log('dataFilter', dataFilter);
     console.log('dataFinal', dataFinal);
     const fetchFriends = async () => {
@@ -216,14 +217,16 @@ const Options2 = ({ type, conversation, userId }) => {
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={{ uri: item.avatar ? item.avatar : 'https://phongreviews.com/wp-content/uploads/2022/11/avatar-facebook-mac-dinh-15.jpg' }} />
                             <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '65%' }}>{item.name}</Text>
+
                             <View style={styles.section}>
-                                <TouchableOpacity
+                                {item._id === userId ? <></> : (<TouchableOpacity
                                     onPress={() => {
                                         handleDeleteMember(item._id);
                                     }}
                                 >
                                     <AntDesign name="delete" size={24} color="black" />
-                                </TouchableOpacity>
+                                </TouchableOpacity>)}
+
                             </View>
                         </View>
                     </View>

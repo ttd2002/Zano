@@ -10,7 +10,7 @@ const useSendMessage = () => {
     try {
         const token = localStorage.getItem("logintoken");
       const res = await fetch(
-        `http://localhost:3000/mes/send/${selectedConversation._id}`, 
+        `http://192.168.137.211:3000/mes/send/${selectedConversation._id}`, 
         
         {
           method: "POST",

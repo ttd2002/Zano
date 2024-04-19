@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import io from "socket.io-client";
 
-const socket = io(`http://localhost:8000`);
+const socket = io(`http://192.168.137.211:8000`);
 const useConversation = create((set) => ({
 
   selectedConversation: null,

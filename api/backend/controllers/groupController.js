@@ -135,16 +135,32 @@ const removeGroupApp = async (req, res) => {
         }
 
         // Trả về phản hồi thành công
-        res.status(200).json({ message: "Group removed successfully",result:true });
+        res.status(200).json({ message: "Group removed successfully", result: true });
     } catch (error) {
         console.log("Error removing group", error);
-        res.status(500).json({ message: "Group removal failed",result:false});
+        res.status(500).json({ message: "Group removal failed", result: false });
+    }
+};
+
+//web
+const getGroupMessaged = async (req, res) => {
+    try {
+        const userId = req.user.id; // Lấy id của người dùng đang đăng nhập từ middleware auth (giả sử đã được định nghĩa)
+
+        // Tìm các cuộc trò chuyện mà người dùng có trong participants và isGroupChat là true
+        const conversations = await Conversation.find({
+            participants: userId,
+            isGroupChat: true,
+        }).populate("participants", "name avatar"); // Populate thông tin của group
+        // console.log("groups", conversations);
+        res.json(conversations);
+    } catch (error) {
+        console.error("Error getting conversations:", error);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
 
-
-
 module.exports = {
-    createGroupApp, changeNameAvatar, removeMember, updateMember, removeGroupApp
+    createGroupApp, changeNameAvatar, removeMember, updateMember, removeGroupApp, getGroupMessaged
 };

@@ -32,7 +32,7 @@ export function LoginUser(formValues) {
   return async (dispatch, getState) => {
     try {
       const response = await axios.post(
-        "/auth/login",
+        "/auth/login2",
         { ...formValues },
         {
           headers: {

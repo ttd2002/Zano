@@ -499,6 +499,7 @@ const MessageContainer = ({ group }) => {
   const theme = useTheme();
   const [openPicker, setOpenPicker] = React.useState(false);
   const { selectedConversation, socket } = useConversation();
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const [messages, setMessages] = useState([]);
   // console.log("group at message", group);
@@ -540,24 +541,86 @@ const MessageContainer = ({ group }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!message) return;
+    if (!message && !selectedFile) return;
     if (!group) {
       console.log("Không có cuộc trò chuyện nào được chọn");
       return;
     }
+
+
     console.log("Sending message:", message);
-    socket.emit("sendMessage", {
-      senderId,
-      conversationId: [group._id],
-      message,
-      type: "text",
-    });
 
-    const updatedMessages = [...messages, { senderId, conversationId: group._id, message, type: "text" }];
-    setMessages(updatedMessages); // Cập nhật danh sách tin nhắn trong state của component
-    setMessage("");
+    try {
+      if (selectedFile) {
+        const image = new FormData();
+        image.append("imageChat", selectedFile);
+        console.log(image);
+        const formData = new FormData();
+        formData.append("imageChat", selectedFile);
+
+        const res = await axios.post("http://localhost:3000/mes/uploadImageApp", formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+
+        console.log("link ảnh", res.data.link);
+        socket.emit("sendMessage", {
+          senderId,
+          conversationId: [group._id],
+          message: res.data.link,
+          type: "image",
+        });
+        const updatedMessages = [
+          ...messages,
+          {
+            senderId,
+            conversationId: [group._id],
+            message: res.data.link,
+            type: "image",
+          },
+        ];
+        setMessages(updatedMessages);
+        setSelectedFile(null);
+      }
+      else {
+        socket.emit("sendMessage", {
+          senderId,
+          conversationId: [group._id],
+          message,
+          type: "text",
+        });
+        const updatedMessages = [
+          ...messages,
+          {
+            senderId,
+            conversationId: [group._id],
+            message,
+            type: "text",
+          },
+        ];
+        setMessages(updatedMessages);
+      }
+      console.log("ok");
+      setMessage("");
+    } catch (error) {
+      console.log(error);
+    };
+    /*  socket.emit("sendMessage", {
+       senderId,
+       conversationId: [group._id],
+       message,
+       type: "text",
+     });
+ 
+     const updatedMessages = [...messages, { senderId, conversationId: group._id, message, type: "text" }];
+     setMessages(updatedMessages); // Cập nhật danh sách tin nhắn trong state của component
+     setMessage(""); */
   };
-
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0]; // Lấy tệp đầu tiên từ mảng files
+    setSelectedFile(file); // Gán giá trị tệp đã chọn vào selectedFile
+  };
 
   return (
     <>
@@ -627,6 +690,9 @@ const MessageContainer = ({ group }) => {
                   {/* <input type="text" placeholder="Send a message..."
            onChange={(e) => setMessage(e.target.value)}
            /> */}
+           <IconButton>
+                    <input type="file" onChange={handleFileSelect} />
+                  </IconButton>
                 </Stack>
 
                 <Box

@@ -35,10 +35,10 @@ const chatRoom = () => {
         console.log("Connected to the Socket server")
     })
     socket.emit("joinRoom", params?.conversationId)
-    socket.on("Render", () => {
-        setMessages([]);
-        fetchMessages();
-    })
+    // socket.on("Render", () => {
+    //     setMessages([]);
+    //     fetchMessages();
+    // })
     const [name, setName] = useState("");
     const [avatar, setAvatar] = useState("");
     const [token, setToken] = useState("");
@@ -505,7 +505,7 @@ const chatRoom = () => {
             setMessages([]);
             fetchMessages();
             setShowLongPressView(false);
-            socket.emit("requestRender");
+            //socket.emit("requestRender");
         } catch (error) {
             console.log("error", error);
         }

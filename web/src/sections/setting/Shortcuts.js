@@ -1,0 +1,165 @@
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  Slide,
+  Stack,
+  Typography,
+} from "@mui/material";
+import React from "react";
+
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
+const list = [
+  {
+    key: 0,
+    title: "Mark as unread",
+    combination: ["Cmd", "Shift", "U"],
+  },
+  {
+    key: 1,
+    title: "Archive chat",
+    combination: ["Cmd", "Shift", "E"],
+  },
+  {
+    key: 2,
+    title: "Pin chat",
+    combination: ["Cmd", "Shift", "P"],
+  },
+  {
+    key: 3,
+    title: "Search Chat",
+    combination: ["Cmd", "Shift", "f"],
+  },
+  {
+    key: 4,
+    title: "Next Chat",
+    combination: ["Ctrl", "Tab"],
+  },
+  {
+    key: 5,
+    title: "New Group",
+    combination: ["Cmd", "Shift", "N"],
+  },
+  {
+    key: 6,
+    title: "Increase speed of voice message",
+    combination: ["Shift", "."],
+  },
+  {
+    key: 7,
+    title: "Settings",
+    combination: ["Shift", ","],
+  },
+  {
+    key: 8,
+    title: "Settings",
+    combination: ["Cmd", "G"],
+  },
+  {
+    key: 9,
+    title: "Mute",
+    combination: ["Cmd", "Shift", "M"],
+  },
+  {
+    key: 10,
+    title: "Delete Chat",
+    combination: ["Cmd", "Shift", "D"],
+  },
+  {
+    key: 11,
+    title: "Search",
+    combination: ["Cmd", "F"],
+  },
+  {
+    key: 12,
+    title: "New Chat",
+    combination: ["Cmd", "N"],
+  },
+  {
+    key: 13,
+    title: "Previous Chat",
+    combination: ["Ctrl", "Shift", "Tab"],
+  },
+  {
+    key: 14,
+    title: "Profile & About",
+    combination: ["Cmd", "P"],
+  },
+  {
+    key: 15,
+    title: "Decrease speed of voice message",
+    combination: ["Shift", ","],
+  },
+  {
+    key: 16,
+    title: "Emoji Panel",
+    combination: ["Cmd", "E"],
+  },
+  {
+    key: 17,
+    title: "Sticker Panel",
+    combination: ["Cmd", "S"],
+  },
+];
+const Shortcuts = ({ open, handleClose }) => {
+  return (
+    <>
+      <Dialog
+        fullWidth
+        maxWidth="md"
+        open={open}
+        onClose={handleClose}
+        keepMounted
+        sx={{ p: 4 }}
+        TransitionComponent={Transition}
+      >
+        {/* Title */}
+        <DialogTitle>Keyboard Shortcuts</DialogTitle>
+        <DialogContent sx={{ mt: 4 }}>
+          <Grid container spacing={3}>
+            {list.map(({ key, title, combination }) => (
+              <Grid key={key} container item xs={6}>
+                <Stack
+                  sx={{ width: "100%" }}
+                  justifyContent={"space-between"}
+                  spacing={3}
+                  direction={"row"}
+                  alignItems={"center"}
+                >
+                  <Typography variant="caption" sx={{ fontSize: 14 }}>
+                    {title}
+                  </Typography>
+                  <Stack spacing={2} direction={"row"}>
+                    {combination.map((el) => {
+                      return (
+                        <Button
+                          disabled
+                          variant="contained"
+                          sx={{ color: "#212121" }}
+                        >
+                          {el}
+                        </Button>
+                      );
+                    })}
+                  </Stack>
+                </Stack>
+              </Grid>
+            ))}
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="contained" onClick={handleClose}>
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+};
+
+export default Shortcuts;

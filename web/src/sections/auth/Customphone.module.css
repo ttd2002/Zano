@@ -1,0 +1,22 @@
+.phone-input-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .phone-input {
+    width: 100%;
+    height: 40px;
+    padding: 8px;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    outline: none;
+  }
+  
+  .phone-input:focus {
+    border-color: blue; /* Màu viền khi focus */
+  }
+  
+  .phone-input-error {
+    color: red; /* Màu chữ khi có lỗi */
+  }

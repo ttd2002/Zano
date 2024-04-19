@@ -14,6 +14,7 @@ import CustomVideoMessage from './CustomVideoMessage';
 import * as DocumentPicker from 'expo-document-picker';
 import { Video } from 'expo-av';
 import CustomDocumentMessage from './CustomDocumentMessage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const chatRoom = () => {
     const [recording, setRecording] = useState();
 
@@ -34,56 +35,33 @@ const chatRoom = () => {
         console.log("Connected to the Socket server")
     })
     socket.emit("joinRoom", params?.conversationId)
-    /* socket.on("receiveMessage", (newMessage) => {
-        // Kiểm tra nếu tin nhắn được nhận từ socket không phải là tin nhắn do chính client gửi
-
-        if (newMessage.senderId !== params?.senderId) {
-            let messageContent;
-            switch (newMessage.type) {
-                case "text":
-                    messageContent = { text: newMessage.message };
-                    break;
-                case "image":
-                    messageContent = { image: newMessage.message };
-                    break;
-                case "video":
-                    messageContent = { video: newMessage.message };
-                    break;
-                case "voice":
-                    messageContent = { audio: newMessage.message };
-                    break;
-                case "file":
-                    messageContent = { document: newMessage.message };
-                    break;
-                default:
-                    messageContent = { text: newMessage.message };
-            }
-            console.log("tessttt", messages)
-            const newMess = {
-                _id: newMessage._id,
-                createdAt: newMessage.timestamp,
-                user: {
-                    _id: newMessage.senderId,
-                },
-                ...messageContent,
-            };
-            // Chỉ thêm tin nhắn mới vào state nếu không phải là tin nhắn do chính client gửi
-            setMessages(previousMessages => GiftedChat.append(previousMessages, newMess));
-
+    socket.on("Render", () => {
+        setMessages([]);
+        fetchMessages();
+    })
+    const [name, setName] = useState("");
+    const [avatar, setAvatar] = useState("");
+    const [token, setToken] = useState("");
+    useEffect(() => {
+        fetchUser();
+        fetchMessages();
+    }, []);
+    const fetchUser = async () => {
+        try {
+            const userString = await AsyncStorage.getItem("auth");
+            const user = JSON.parse(userString);
+            const name = user.name;
+            const avatar = user.avatar;
+            const token = await AsyncStorage.getItem("token");
+            console.log('name', name);
+            console.log('avatar', avatar);
+            setToken(token)
+            setName(name);
+            setAvatar(avatar);
+        } catch (error) {
+            console.error("Error fetching user data", error);
         }
-    }); */
-
-    // const handleMessaged = async () => {
-    //     try {
-    //         await axios.post(`http://${ipAddress}:3000/users/add-messaged`, {
-    //             currentUserId: params?.senderId,
-    //             receiverId: params?.receiverId,
-    //         });
-    //         socket.emit("requestRender")
-    //     } catch (error) {
-    //         console.log("error", error);
-    //     }
-    // };
+    };
     useEffect(() => {
         const receiveMessageHandler = (newMessage) => {
             // Kiểm tra nếu tin nhắn được nhận từ socket không phải là tin nhắn do chính client gửi
@@ -151,7 +129,7 @@ const chatRoom = () => {
         try {
             const conversationId = params?.conversationId;
             const response = await axios.get(`http://${ipAddress}:3000/mes/messages/${conversationId}`, {
-                body: { conversationId },
+                params: { conversationId, senderId: params?.senderId },
             });
             const newMessages = response.data.map(message => {
                 let messageContent;
@@ -180,6 +158,8 @@ const chatRoom = () => {
                     createdAt: message.timestamp,
                     user: {
                         _id: message.senderId,
+                        name: "Đại",
+                        avatar: "https://avatar.iran.liara.run/public/boy?phone=0337052369"
                     },
                     ...messageContent,
                 };
@@ -193,9 +173,7 @@ const chatRoom = () => {
     };
     console.log("mes", messages);
 
-    useEffect(() => {
-        fetchMessages();
-    }, []);
+
     // const checkFirstMessage = async () => {
     //     try {
     //         const senderId = params?.senderId;
@@ -211,10 +189,10 @@ const chatRoom = () => {
     // }
     const onSend = useCallback(async (messages = [], senderId, conversationId, type) => {
         setMessages(previousMessages => GiftedChat.append(previousMessages, messages));
+
         if (type === "image") {
             const message = messages.image;
             socket.emit("sendMessage", { senderId, conversationId, message, type });
-
         }
         if (type === "video") {
             const message = messages.video;
@@ -274,9 +252,11 @@ const chatRoom = () => {
                 // setModalVisible(false)
                 console.log(result);
                 const data = new FormData();
-                data.append('imageChat', source)
-                fetch(`http://${ipAddress}:3000/mes/uploadImageApp`, {
+                data.append('file', source)
+                fetch(`https://api.cloudinary.com/v1_1/dbtgez7ua/auto/upload?upload_preset=DemoZanoo`, {
                     method: 'POST',
+                    // fetch(`http://${ipAddress}:3000/mes/uploadImageApp`, {
+                    //     method: 'POST',
                     body: data,
                     headers: {
                         'Accept': 'application/json',
@@ -286,10 +266,11 @@ const chatRoom = () => {
                     console.log(data);
                     const messages = {
                         _id: Math.random().toString(36).substring(7),
-                        image: data.link,
+                        image: data.url,
                         createdAt: new Date(),
                         user: {
                             _id: params?.senderId,
+                            name: name, avatar: avatar
                         },
                     };
                     onSend(messages, params?.senderId, params?.conversationId, "image")
@@ -353,7 +334,7 @@ const chatRoom = () => {
                         video: data.url,
                         createdAt: new Date(),
                         user: {
-                            _id: params?.senderId,
+                            _id: params?.senderId, name: name, avatar: avatar
                         },
                     };
                     onSend(messages, params?.senderId, params?.conversationId, "video")
@@ -429,7 +410,7 @@ const chatRoom = () => {
                 audio: data.secure_url,
                 createdAt: new Date(),
                 user: {
-                    _id: params?.senderId,
+                    _id: params?.senderId, name: name, avatar: avatar
                 },
             };
             onSend(messages, params?.senderId, params?.conversationId, "voice")
@@ -481,7 +462,7 @@ const chatRoom = () => {
                     document: data.url,
                     createdAt: new Date(),
                     user: {
-                        _id: params?.senderId,
+                        _id: params?.senderId, name: name, avatar: avatar
                     },
                 };
                 onSend(messages, params?.senderId, params?.conversationId, "file")
@@ -495,44 +476,46 @@ const chatRoom = () => {
             console.warn(err);
         }
     }, []);
-    // const onDeleteMessage = async (selectedMessage) => {
-    //     try {
-    //         await axios.post(`http://${ipAddress}:3000/mes/deleteMessage`, {
-    //             currentUserId: params?.senderId,
-    //             receiverId: params?.receiverId,
-    //             messageId: selectedMessage._id,
-    //             timestamp: selectedMessage.createdAt,
-    //         });
-    //         setMessages([]);
-    //         fetchMessages();
-    //         setShowLongPressView(false);
-    //         socket.emit("requestRender")
-    //     } catch (error) {
-    //         console.log("error", error);
-    //     }
-    // };
-    // const onRecallMessage = async (selectedMessage) => {
-    //     try {
-    //         await axios.post(`http://${ipAddress}:3000/mes/recallMessage`, {
-    //             currentUserId: params?.senderId,
-    //             receiverId: params?.receiverId,
-    //             messageId: selectedMessage._id,
-    //             timestamp: selectedMessage.createdAt,
-    //         });
-    //         setMessages([]);
-    //         fetchMessages();
-    //         setShowLongPressView(false);
-    //         socket.emit("requestRender")
-    //     } catch (error) {
-    //         console.log("error", error);
-    //     }
-    // };
-    // const handleLongPress = (context, message) => {
-    //     setSelectedMessage(message); // Lưu message được chọn để sử dụng trong CustomLongPressView
-    //     setShowLongPressView(true);
+    const onDeleteMessage = async (selectedMessage) => {
+        try {
+            await axios.post(`http://${ipAddress}:3000/mes/deleteMessage`, {
+                currentUserId: params?.senderId,
+                // receiverId: params?.receiverId,
+                messageId: selectedMessage._id,
+                // timestamp: selectedMessage.createdAt,
+                conversationId: params?.conversationId,
+            });
+            setMessages([]);
+            fetchMessages();
+            setShowLongPressView(false);
+            socket.emit("requestRender")
+        } catch (error) {
+            console.log("error", error);
+        }
+    };
+    const onRecallMessage = async (selectedMessage) => {
+        try {
+            await axios.post(`http://${ipAddress}:3000/mes/recallMessage`, {
+                currentUserId: params?.senderId,
+                // receiverId: params?.receiverId,
+                messageId: selectedMessage._id,
+                // timestamp: selectedMessage.createdAt,
+                conversationId: params?.conversationId,
+            });
+            setMessages([]);
+            fetchMessages();
+            setShowLongPressView(false);
+            socket.emit("requestRender");
+        } catch (error) {
+            console.log("error", error);
+        }
+    };
+    const handleLongPress = (context, message) => {
+        setSelectedMessage(message); // Lưu message được chọn để sử dụng trong CustomLongPressView
+        setShowLongPressView(true);
 
-    // };
-    
+    };
+
     const getFileIcon = (type) => {
         switch (type) {
             case 'pdf':
@@ -550,6 +533,16 @@ const chatRoom = () => {
                 return require('../../../assets/dox.png');
         }
     };
+    const renderAvatar = (props) => {
+        return (
+          <View style={{ marginRight: 5 }}>
+            <Image
+              source={{ uri: props.currentMessage.user.avatar }}
+              style={{ width: 40, height: 40, borderRadius: 20 }}
+            />
+          </View>
+        );
+      }
     return (
         <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#e2e8f1" }}>
             <View style={{ backgroundColor: '#00abf6', justifyContent: 'flex-start', alignItems: 'center', flexDirection: "row", alignItems: "center", gap: 10, height: 50 }}>
@@ -572,8 +565,10 @@ const chatRoom = () => {
             <GiftedChat
                 messages={messages}
                 onSend={messages => onSend(messages, params?.senderId, params?.conversationId, "text")}
-                user={{ _id: params?.senderId }}
+                user={{ _id: params?.senderId , name: name, avatar: avatar}}
                 onInputTextChanged={setText}
+                renderAvatar={(props) => <Image style={{height: 50, width: 50, borderRadius: 50, resizeMode:'contain'}} source={{uri: props.currentMessage.user.avatar}}/>}
+                renderUsername={(props) => <Text style={{color: 'black'}}>{props.currentMessage.user.name}</Text>}
                 renderSend={(props) => (
                     <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 14 }}>
                         {text.length > 0 && (
@@ -624,9 +619,9 @@ const chatRoom = () => {
                 renderMessage={(props) => {
                     // Kiểm tra nếu tin nhắn có chứa tài liệu
                     const documetLink = props.currentMessage.document
-                    console.log(props.currentMessage)
                     if (props.currentMessage.document) {
-                        return <TouchableOpacity onPress={()=>{Linking.openURL(props.currentMessage.document)}}>
+                        return <TouchableOpacity onPress={() => { Linking.openURL(props.currentMessage.document) }}>
+                            {console.log('tetstttt', props.currentMessage)}
                             <View style={props.currentMessage.user._id === params.senderId ? styles.containerSender : styles.containerReceiver}>
                                 <View style={{ backgroundColor: '#f0f0f0' }}>
                                     <Image source={getFileIcon(documetLink.substring(documetLink.lastIndexOf(".") + 1))} style={styles.icon} />
@@ -640,9 +635,9 @@ const chatRoom = () => {
                     return <Message {...props} />;
                 }}
             />
-            {/* {showLongPressView && (
+            {showLongPressView && (
                 <View style={{ backgroundColor: 'white', position: 'absolute', bottom: 0, left: 0, right: 0, justifyContent: 'center', alignItems: 'center' }}>
-                    {selectedMessage && selectedMessage.user._id === params?.receiverId ? (
+                    {selectedMessage && selectedMessage.user._id === params?.senderId ? (
                         <TouchableOpacity
                             style={{
                                 width: '100%',
@@ -674,7 +669,7 @@ const chatRoom = () => {
                         <Text style={{ color: 'black', fontSize: 20 }}>Đóng</Text>
                     </TouchableOpacity>
                 </View>
-            )} */}
+            )}
         </KeyboardAvoidingView>
     );
 }

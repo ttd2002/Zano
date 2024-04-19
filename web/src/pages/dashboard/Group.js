@@ -542,6 +542,7 @@ const MessageContainer = ({ group }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!message && !selectedFile) return;
+//     if (!message) return;
     if (!group) {
       console.log("Không có cuộc trò chuyện nào được chọn");
       return;
@@ -621,6 +622,20 @@ const MessageContainer = ({ group }) => {
     const file = e.target.files[0]; // Lấy tệp đầu tiên từ mảng files
     setSelectedFile(file); // Gán giá trị tệp đã chọn vào selectedFile
   };
+
+//     console.log("Sending message:", message);
+//     socket.emit("sendMessage", {
+//       senderId,
+//       conversationId: [group._id],
+//       message,
+//       type: "text",
+//     });
+
+//     const updatedMessages = [...messages, { senderId, conversationId: group._id, message, type: "text" }];
+//     setMessages(updatedMessages); // Cập nhật danh sách tin nhắn trong state của component
+//     setMessage("");
+//   };
+
 
   return (
     <>

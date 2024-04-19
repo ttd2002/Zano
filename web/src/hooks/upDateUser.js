@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
             
             const res = await fetch(
                 `http://192.168.137.211:3000/users/updateUser/${loginId}`,
+//                 `http://localhost:3000/users/updateUser/${loginId}`,
                 {
                     method: "PUT",
                     headers: {

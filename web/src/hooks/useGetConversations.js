@@ -11,7 +11,6 @@ const useGetConversations = () => {
   //   getConversations();
   // })
   useEffect(() => {
-  
     const getConversations = async () => {
       setLoading(true);
       try {
@@ -20,6 +19,7 @@ const useGetConversations = () => {
           throw new Error("tokenString not found"); // Throw an error if user object is not found
         }
         const res = await fetch(`http://192.168.137.211:3000/users/getListUsers`, {
+//         const res = await fetch(`http://localhost:3000/users/getListUsers`, {
           headers: {
             Authorization: `Bearer ${tokenString}`, // Thêm token vào tiêu đề Authorization
           },

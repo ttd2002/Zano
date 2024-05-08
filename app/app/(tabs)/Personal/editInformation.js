@@ -11,6 +11,8 @@ import UploadModal from "./UploadModal";
 global.atob = decode;
 import * as ImagePicker from "expo-image-picker"
 import { ipAddress } from "../../../config/env";
+import { io } from 'socket.io-client';
+
 import CryptoJS from 'crypto-js';
 import { getRandomBytes } from 'react-native-get-random-values';
 // import { Promise } from "core-js";
@@ -21,9 +23,9 @@ import { getRandomBytes } from 'react-native-get-random-values';
 const { View, ImageBackground, Image, TouchableOpacity, Text, StyleSheet, Modal, TextInput, Pressable, Platform, TouchableWithoutFeedback } = require("react-native")
 
 const EditInformation = () => {
+    const socket = io(`http://${ipAddress}:8000`);
 
-
-
+    const navigate = useNavigation()
     const today = new Date();
     const options = { day: 'numeric', month: 'numeric', year: 'numeric' };
     const formattedDate = today.toLocaleDateString('vi-VN', options);
@@ -114,7 +116,7 @@ const EditInformation = () => {
     const handleButtonEdit = async () => {
         try {
             await editProfileHandle();
-            router.replace("/Personal/InformationPage");
+            //router.replace("/Personal/InformationPage");
         } catch (error) {
             console.error("Error editing profile", error);
         }
@@ -162,7 +164,7 @@ const EditInformation = () => {
     }
     const handleUpdata = (photo) => {
         const data = new FormData();
-        
+
         data.append('avatar', photo)
         // data.append('name', 'acccc')
         console.log(data);
@@ -220,41 +222,47 @@ const EditInformation = () => {
     //         });
     //     });
     // };
-    const editProfileHandle = async (avatar) => {
+    const editProfileHandle = async () => {
         try {
-            // Tải dữ liệu của hình ảnh từ đường dẫn
-            // const responseFetch = await fetch(avatar);
-            // const blob = await responseFetch.blob();
+        // Tải dữ liệu của hình ảnh từ đường dẫn
+        // const responseFetch = await fetch(avatar);
+        // const blob = await responseFetch.blob();
 
-            // Tạo đối tượng file từ dữ liệu đã tải xuống
-            // const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+        // Tạo đối tượng file từ dữ liệu đã tải xuống
+        // const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
 
-            // Tạo formData và thêm đối tượng file vào đó
-            // const formData = new FormData();
-            // formData.append('avatar', file);
-            // formData.append('name', name);
-            // formData.append('birthDate', birthDate);
-            // formData.append('gender', selectedId === "1" ? "male" : "female");
+        // Tạo formData và thêm đối tượng file vào đó
+        // const formData = new FormData();
+        // formData.append('avatar', file);
+        // formData.append('name', name);
+        // formData.append('birthDate', birthDate);
+        // formData.append('gender', selectedId === "1" ? "male" : "female");
 
-            // Gửi request axios với formData
-            const responseAxios = await axios.put(
-                `http://${ipAddress}:3000/users/${userId}/editProfile`,
-                {
-                    // body: avatar,
-                    // headers: {
-                    //     Authorization: `Bearer ${token}`,
-                    //     'Content-Type': 'multipart/form-data'
-                    // }
-                    name,
-                    gender: selectedId === "1" ? "male" : "female",
-                    birthDate
+        // Gửi request axios với formData
+        const responseAxios = await axios.put(
+            `http://${ipAddress}:3000/users/${userId}/editProfile`,
+            {
+                // body: avatar,
+                // headers: {
+                //     Authorization: `Bearer ${token}`,
+                //     'Content-Type': 'multipart/form-data'
+                // }
+                name,
+                gender: selectedId === "1" ? "male" : "female",
+                birthDate
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
-            );
+            }
+        );
 
-            // Xử lý phản hồi từ server
-            const user2 = responseAxios.data;
-            console.log(user2);
-            // Kiểm tra và xử lý phản hồi
+        // Xử lý phản hồi từ server
+        const user2 = responseAxios.data;
+        console.log("stad", user2);
+        // Kiểm tra và xử lý phản hồi
 
         } catch (error) {
             console.error("Lỗi khi chỉnh sửa thông tin", error);
@@ -269,7 +277,7 @@ const EditInformation = () => {
             <View style={{ height: 'auto', width: '100%', backgroundColor: '#00abf6', flexDirection: 'row', alignItems: 'center', padding: 10, gap: 15 }}>
                 <TouchableOpacity
                     onPress={() => {
-                        router.replace('/Personal/InformationPage')
+                        navigate.goBack();
                     }}
                 >
                     <Feather name="x" size={24} color="white" />
@@ -311,6 +319,13 @@ const EditInformation = () => {
                             />
                         )}
                         <View style={{ width: '100%', height: 35, flexDirection: 'row', alignItems: 'flex-end', borderBottomWidth: 0.5, borderColor: 'grey', justifyContent: 'space-between', marginBottom: 5 }}>
+                            {/* {showPicker && Platform.OS === "ios" && (
+                                <View style={{ flexDirection: "row", justifyContent: "space-around"}}>
+                                    <TouchableOpacity onPress={toggleDatePicker}>
+                                        <Text>Cancel</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )} */}
                             {!showPicker && (
                                 <TouchableOpacity onPress={toggleDatePicker}>
                                     <TextInput
@@ -340,7 +355,11 @@ const EditInformation = () => {
                     onGalleryPress={() => uploadImage("gallery")}
                 ></UploadModal>
                 <TouchableOpacity
-                    onPress={handleButtonEdit}
+                    onPress={() => {
+                        handleButtonEdit()
+                        setModalVisible(false)
+                        socket.emit("requestRender")
+                    }}
                     style={{ height: 50, width: '95%', backgroundColor: '#00abf6', justifyContent: 'center', alignItems: 'center', borderRadius: 20, marginTop: 20 }}>
                     <Text style={{ color: 'white', fontSize: 20, fontStyle: 'normal' }}>Lưu</Text>
                 </TouchableOpacity>

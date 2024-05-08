@@ -11,7 +11,6 @@ const UserChat = ({ item, userId }) => {
         const n = messages.length;
         return messages[n - 1];
     }
-    console.log('item', item);
     const getContentMessage = () => {
         let messageContent;
         switch (lastMessage.type) {
@@ -43,7 +42,7 @@ const UserChat = ({ item, userId }) => {
         try {
             const conversationId = item?._id;
             const response = await axios.get(`http://${ipAddress}:3000/mes/messages/${conversationId}`, {
-                body: { conversationId },
+                params: { conversationId, senderId: userId },
             });
 
             setMessages(response.data);
@@ -51,8 +50,6 @@ const UserChat = ({ item, userId }) => {
             console.error("Error fetching messages:", error);
         }
     };
-    console.log(messages);
-    console.log("conversationId", item._id);
 
     return (
         <Pressable

@@ -23,6 +23,7 @@ const createGroupApp = async (req, res) => {
         const newGroup = new Conversation({
             participants: members,
             listAdmins: [admin],
+            leader: admin,
             isGroupChat: true,
             name: nameGroup,
             avatar: linkAvatar,

@@ -13,6 +13,10 @@ const conversationSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
+  leader: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
   isGroupChat: {
     type: Boolean,
     default: false

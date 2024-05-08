@@ -20,6 +20,7 @@ const chatRoom = () => {
 
     const navigation = useNavigation();
     const [messages, setMessages] = useState([])
+    const [messages2, setMessages2] = useState([])
     const [text, setText] = useState('')
 
     const params = useLocalSearchParams();
@@ -65,7 +66,7 @@ const chatRoom = () => {
     useEffect(() => {
         const receiveMessageHandler = (newMessage) => {
             // Kiểm tra nếu tin nhắn được nhận từ socket không phải là tin nhắn do chính client gửi
-            if (newMessage.senderId !== params?.senderId) {
+            // if (newMessage.senderId !== params?.senderId) {
                 let messageContent;
                 switch (newMessage.type) {
                     case "text":
@@ -86,7 +87,6 @@ const chatRoom = () => {
                     default:
                         messageContent = { text: newMessage.message };
                 }
-                console.log("tessttt", messages)
                 const newMess = {
                     _id: newMessage._id,
                     createdAt: newMessage.timestamp,
@@ -95,9 +95,10 @@ const chatRoom = () => {
                     },
                     ...messageContent,
                 };
+                console.log('newMesRecei',newMess);
                 // Chỉ thêm tin nhắn mới vào state nếu không phải là tin nhắn do chính client gửi
                 setMessages(previousMessages => GiftedChat.append(previousMessages, newMess));
-            }
+            // }
         };
 
         socket.on("receiveMessage", receiveMessageHandler);
@@ -171,7 +172,6 @@ const chatRoom = () => {
             console.log("Error fetching the messages", error);
         }
     };
-    console.log("mes", messages);
 
 
     // const checkFirstMessage = async () => {
@@ -188,7 +188,7 @@ const chatRoom = () => {
     //     }
     // }
     const onSend = useCallback(async (messages = [], senderId, conversationId, type) => {
-        setMessages(previousMessages => GiftedChat.append(previousMessages, messages));
+        // setMessages(previousMessages => GiftedChat.append(previousMessages, messages));
 
         if (type === "image") {
             const message = messages.image;

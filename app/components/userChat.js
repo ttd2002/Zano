@@ -43,7 +43,7 @@ const UserChat = ({ item, userId }) => {
         try {
             const conversationId = item?._id;
             const response = await axios.get(`http://${ipAddress}:3000/mes/messages/${conversationId}`, {
-                body: { conversationId },
+                params: { conversationId, senderId: params?.senderId },
             });
 
             setMessages(response.data);

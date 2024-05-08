@@ -15,6 +15,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Video } from 'expo-av';
 import CustomDocumentMessage from './CustomDocumentMessage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {Swipeable} from 'react-native-gesture-handler'
 const chatRoom = () => {
     const [recording, setRecording] = useState();
 
@@ -54,8 +55,6 @@ const chatRoom = () => {
             const name = user.name;
             const avatar = user.avatar;
             const token = await AsyncStorage.getItem("token");
-            console.log('name', name);
-            console.log('avatar', avatar);
             setToken(token)
             setName(name);
             setAvatar(avatar);
@@ -159,8 +158,6 @@ const chatRoom = () => {
                     createdAt: message.timestamp,
                     user: {
                         _id: message.senderId,
-                        name: "Đại",
-                        avatar: "https://avatar.iran.liara.run/public/boy?phone=0337052369"
                     },
                     ...messageContent,
                 };
@@ -200,7 +197,6 @@ const chatRoom = () => {
 
         }
         if (type === "voice") {
-            console.log("test audio", messages.audio)
             // const message = messages.audio;
             socket.emit("sendMessage", { senderId, conversationId, message: messages.audio, type });
 
@@ -220,7 +216,6 @@ const chatRoom = () => {
         //     handleMessaged();
         // }
     }, []);
-    console.log("con", params?.conversationId);
     const uploadImage = async (mode) => {
         try {
             let result = {};
@@ -246,11 +241,9 @@ const chatRoom = () => {
                 const type = result.assets[0].mimeType
                 const name = "imageChat"
                 const source = { uri, name, type }
-                console.log('source', source);
                 // setAvatar(uri)
                 // setSource(source)
                 // setModalVisible(false)
-                console.log(result);
                 const data = new FormData();
                 data.append('file', source)
                 fetch(`https://api.cloudinary.com/v1_1/dbtgez7ua/auto/upload?upload_preset=DemoZanoo`, {
@@ -263,7 +256,6 @@ const chatRoom = () => {
                         'Content-Type': 'multipart/form-data'
                     }
                 }).then(res => res.json()).then(data => {
-                    console.log(data);
                     const messages = {
                         _id: Math.random().toString(36).substring(7),
                         image: data.url,
@@ -313,8 +305,6 @@ const chatRoom = () => {
                 const type = result.assets[0].mimeType
                 const name = result.assets[0].fileName
                 const source = { uri, name, type }
-                console.log('source', source);
-                console.log(result);
                 const data = new FormData();
                 data.append('file', source);
                 // data.append('imageChat', source);
@@ -328,7 +318,6 @@ const chatRoom = () => {
                         'Content-Type': 'multipart/form-data'
                     }
                 }).then(res => res.json()).then(data => {
-                    console.log("fdhd", data);
                     const messages = {
                         _id: Math.random().toString(36).substring(7),
                         video: data.url,
@@ -393,7 +382,6 @@ const chatRoom = () => {
 
         const name = uri.substring(uri.lastIndexOf("/") + 1);
         const source = { uri, name, type };
-        console.log('source audio', source);
         const data = new FormData();
         data.append('file', source);
         fetch(`https://api.cloudinary.com/v1_1/dbtgez7ua/auto/upload?upload_preset=DemoZanoo`, {
@@ -404,7 +392,6 @@ const chatRoom = () => {
                 'Content-Type': 'multipart/form-data'
             }
         }).then(res => res.json()).then(data => {
-            console.log("fdhd", data.secure_url);
             const messages = {
                 _id: Math.random().toString(36).substring(7),
                 audio: data.secure_url,
@@ -440,12 +427,10 @@ const chatRoom = () => {
             const response = await DocumentPicker.getDocumentAsync({
                 presentationStyle: 'fullScreen',
             });
-            console.log("ress tài liệu", response)
             const uri = response.assets[0].uri;
             const type = response.assets[0].mimeType;
             const name = response.assets[0].name;
             const source = { uri, name, type };
-            console.log('source tài liệu', source);
             const data = new FormData();
             data.append('file', source);
             fetch(`https://api.cloudinary.com/v1_1/dbtgez7ua/auto/upload?upload_preset=DemoZanoo`, {
@@ -456,7 +441,6 @@ const chatRoom = () => {
                     'Content-Type': 'multipart/form-data'
                 }
             }).then(res => res.json()).then(data => {
-                console.log("fdhd", data.url);
                 const messages = {
                     _id: Math.random().toString(36).substring(9),
                     document: data.url,
@@ -567,8 +551,9 @@ const chatRoom = () => {
                 onSend={messages => onSend(messages, params?.senderId, params?.conversationId, "text")}
                 user={{ _id: params?.senderId , name: name, avatar: avatar}}
                 onInputTextChanged={setText}
-                renderAvatar={(props) => <Image style={{height: 50, width: 50, borderRadius: 50, resizeMode:'contain'}} source={{uri: props.currentMessage.user.avatar}}/>}
-                renderUsername={(props) => <Text style={{color: 'black'}}>{props.currentMessage.user.name}</Text>}
+                // renderUsername={true}
+                // renderAvatar={(props) => <Image style={{height: 50, width: 50, borderRadius: 50, resizeMode:'contain'}} source={{uri: props.currentMessage.user.avatar}}/>}
+                // renderUsername={(props) => <Text style={{color: 'black'}}>{props.currentMessage.user.name}</Text>}
                 renderSend={(props) => (
                     <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 14 }}>
                         {text.length > 0 && (
@@ -621,7 +606,6 @@ const chatRoom = () => {
                     const documetLink = props.currentMessage.document
                     if (props.currentMessage.document) {
                         return <TouchableOpacity onPress={() => { Linking.openURL(props.currentMessage.document) }}>
-                            {console.log('tetstttt', props.currentMessage)}
                             <View style={props.currentMessage.user._id === params.senderId ? styles.containerSender : styles.containerReceiver}>
                                 <View style={{ backgroundColor: '#f0f0f0' }}>
                                     <Image source={getFileIcon(documetLink.substring(documetLink.lastIndexOf(".") + 1))} style={styles.icon} />

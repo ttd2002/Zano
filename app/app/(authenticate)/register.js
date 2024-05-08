@@ -160,8 +160,8 @@ const register = () => {
                             alert("Vui lòng nhập đầy đủ thông tin")
                         }
                         else {
-                            // sendVerification()
-                            handleRegister()
+                            sendVerification()
+                            // handleRegister()
                         }
                     }}
                     style={{ marginTop: 20, height: 50, width: 150, borderWidth: 1, borderColor: '#00abf6', justifyContent: 'center', alignItems: 'center', borderRadius: 20 }}>
@@ -181,6 +181,7 @@ const register = () => {
                     onPress={() => {
                         confirmCode()
                         setVertificationId(null)
+                        router.navigate("/login")
                     }}
                     style={{ marginTop: 20, height: 50, width: 150, borderWidth: 1, borderColor: '#00abf6', justifyContent: 'center', alignItems: 'center', borderRadius: 20 }}>
                     <Text style={{ color: 'black', fontSize: 20, fontStyle: 'normal' }}>Xác thực</Text>

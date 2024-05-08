@@ -39,13 +39,11 @@ const index = () => {
       const userId = user._id;
       const listFriend = user.listFriend;
       const friendRequestIds = user.friendRequests;
-      const token = await AsyncStorage.getItem("token");
-      console.log(token);
+      const token = await AsyncStorage.getItem(token);
       setToken(token)
       setUserId(userId);
       setListFriend(listFriend);
       setFriendRequests(friendRequestIds)
-      console.log(friendRequestIds);
     };
     fetchUser();
     fetchGetUser();
@@ -121,7 +119,6 @@ const index = () => {
         senderId: userId,
         receiverId: receiver._id,
       });
-      console.log("handleCreateConversationSingleChat", response.data.conversation._id);
       const conversationId = response.data.conversation._id;
       router.navigate({
         pathname: '/Message/chatRoom',
@@ -144,7 +141,6 @@ const index = () => {
         receiverId: receiverId,
       });
       setFriendRequestSendIds(prevIds => [...prevIds, receiverId]);
-      console.log('add');
     } catch (error) {
       console.log("error", error);
     }
@@ -159,7 +155,6 @@ const index = () => {
     }
   }
   const handleAcceptFriendRequest = async (requestId) => {
-    console.log('requestId', requestId);
     try {
       await axios.post(`http://${ipAddress}:3000/users/app/respondToFriendRequest`, {
         responderId: userId,
@@ -173,7 +168,6 @@ const index = () => {
     }
   }
   const handleRejectFriendRequest = async (requestId) => {
-    console.log('requestId', requestId);
     try {
       await axios.post(`http://${ipAddress}:3000/users/app/respondToFriendRequest`, {
         responderId: userId,
@@ -185,8 +179,6 @@ const index = () => {
       console.log("error", error);
     }
   }
-  console.log('get FriendRequest', friendRequestSendIds);
-  console.log("res", messaged);
   return (
     chekcFind ?
       <View style={styles.container}>

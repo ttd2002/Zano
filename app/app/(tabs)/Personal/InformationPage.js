@@ -11,31 +11,32 @@ import UploadModal from "./UploadModal";
 global.atob = decode;
 import * as ImagePicker from "expo-image-picker"
 import { ipAddress } from "../../../config/env";
+import { io } from 'socket.io-client';
 
 const { View, ImageBackground, Image, TouchableOpacity, Text, StyleSheet, Modal, TextInput, Pressable, Platform } = require("react-native")
 
 const InformationPage = () => {
+    const socket = io(`http://${ipAddress}:8000`);
+    const navigate = useNavigation()
     const today = new Date();
     const options = { day: 'numeric', month: 'numeric', year: 'numeric' };
     const formattedDate = today.toLocaleDateString('vi-VN', options);
     const router = useRouter();
     const [visible, setVisible] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
-
     const [showPicker, setShowPicker] = useState(false);
-
     const [userId, setUserId] = useState("");
     const [birthDate, setBirthDate] = useState(formattedDate);
-
     const [date, setDate] = useState("");
-
     const [selectedId, setSelectedId] = useState("");
-
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
     const [gender, setGender] = useState("");
     const [avatar, setAvatar] = useState("");
-
+    const [token, setToken] = useState("");
+    socket.on("Render", () => {
+        fetchUser()
+    })
     const uploadImage = async (mode)=>{
         try {
             let result = {};
@@ -80,14 +81,17 @@ const InformationPage = () => {
     }, []);
     const fetchUser = async () => {
         try {
-            const token = await AsyncStorage.getItem("auth");
-            const decodedToken = jwtDecode(token);
-            const userId = decodedToken.userId;
-            const name = decodedToken.uName;
-            const phone = decodedToken.phone;
-            const avatar = decodedToken.uAvatar;
-            const gender = decodedToken.uGender;
-            const birthDate = decodedToken.uBirthDate;
+            const userString = await AsyncStorage.getItem("auth");
+            const user = JSON.parse(userString);
+            const userId = user._id;
+            const name = user.name;
+            const phone = user.phone;
+            const avatar = user.avatar;
+            const gender = user.gender;
+            const birthDate = user.birthDate;
+            const token = await AsyncStorage.getItem("token");
+            console.log(token);
+            setToken(token)
             setUserId(userId);
             setName(name);
             setPhone(phone);
@@ -124,7 +128,7 @@ const InformationPage = () => {
             <View style={{ width: '100%', height: 200, justifyContent: 'flex-start' }}>
                 <ImageBackground style={{ width: '100%', height: 200, flex: 1, justifyContent: 'flex-start' }} source={{ uri: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0_pw1BpBfuZAevTRIg7RFQD1NZzdrEy016w&s' }}>
                     <TouchableOpacity style={{ width: '15%', height: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 40 }}
-                        onPress={() => { router.replace('/Personal/settingPage') }}>
+                        onPress={() => { navigate.goBack() }}>
                         <AntDesign name="arrowleft" size={30} color="white" />
                     </TouchableOpacity>
 
@@ -154,7 +158,7 @@ const InformationPage = () => {
                 <Text style={{ fontSize: 16, fontWeight: '600' }}>Thông tin cá nhân</Text>
                 <View style={{ flexDirection: 'row', height: 50, alignItems: 'center' }}>
                     <Text style={{ width: '30%' }}>Giới tính:</Text>
-                    <Text>{gender === "male" ? "Nam" : "Nữ"}</Text>
+                    <Text>{gender === "male" ? "Nam" : (gender === "female" ? "Nữ" : "")}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', height: 50, alignItems: 'center', marginTop: 2 }}>
                     <Text style={{ width: '30%' }}>Ngày sinh:</Text>

@@ -4,7 +4,7 @@ import { FontAwesome } from "@expo/vector-icons";
 
 export default function Layout() {
   return (
-    <Tabs>
+    <Tabs initialRouteName="Message">
       <Tabs.Screen
         name="Message"
         options={{

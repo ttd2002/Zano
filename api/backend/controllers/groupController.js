@@ -81,6 +81,37 @@ const removeMember = async (req, res) => {
         res.status(500).json({ message: "Failed to remove member" });
     }
 };
+const changeLeaderApp = async (req, res) => {
+    try {
+        const { memberId, conversationId } = req.body;
+        console.log('memberId', memberId);
+        console.log('conversationId', conversationId);
+        // Tìm cuộc trò chuyện tương ứng
+        const conversation = await Conversation.findById(conversationId);
+
+        // Nếu không tìm thấy cuộc trò chuyện
+        if (!conversation) {
+            return res.status(404).json({ message: "Conversation not found" });
+        }
+
+        // Loại bỏ thành viên khỏi mảng participants
+        // conversation.participants = conversation.participants.filter(participant => participant._id.toString() !== memberId);
+        const member = await User.findById(memberId);
+        conversation.leader = member;
+
+        if (!conversation.listAdmins.includes(member)) {
+            conversation.listAdmins.push(member);
+        }
+
+        const updatedConversation = await conversation.save();
+
+        // Trả về phản hồi thành công
+        res.status(200).json({ message: "Change leader successfully", conversation: updatedConversation });
+    } catch (error) {
+        // console.log("Error removing member:", error);
+        res.status(500).json({ message: "Failed to change leader" });
+    }
+};
 const updateMember = async (req, res) => {
     try {
         const { members, admins, conversationId, } = req.body;
@@ -142,7 +173,30 @@ const removeGroupApp = async (req, res) => {
         res.status(500).json({ message: "Group removal failed", result: false });
     }
 };
+const leaveGroupApp = async (req, res) => {
+    try {
+        const { conversationId, senderId } = req.body;
+        console.log('conversationId', conversationId);
+        console.log('senderId', senderId);
 
+        const conversation = await Conversation.findById(conversationId);
+
+        // Kiểm tra nếu không tìm thấy cuộc trò chuyện hoặc nhóm để xóa
+        if (!conversation) {
+            return res.status(404).json({ message: "Group not found" });
+        }
+        console.log(conversation.participants);
+        conversation.participants = conversation.participants.filter(memberId => memberId._id.toString() !== senderId);
+        conversation.listAdmins = conversation.listAdmins.filter(memberId => memberId._id.toString() !== senderId);
+        await conversation.save();
+
+        // Trả về phản hồi thành công
+        res.status(200).json({ message: "Leave group successfully", result: true });
+    } catch (error) {
+        console.log("Error removing group", error);
+        res.status(500).json({ message: "Leave group failed", result: false });
+    }
+};
 //web
 const getGroupMessaged = async (req, res) => {
     try {
@@ -163,5 +217,5 @@ const getGroupMessaged = async (req, res) => {
 
 
 module.exports = {
-    createGroupApp, changeNameAvatar, removeMember, updateMember, removeGroupApp, getGroupMessaged
+    createGroupApp, changeNameAvatar, removeMember, updateMember, removeGroupApp, getGroupMessaged,leaveGroupApp, changeLeaderApp
 };

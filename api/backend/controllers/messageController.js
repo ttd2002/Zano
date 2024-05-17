@@ -62,7 +62,7 @@ const messages = async (req, res) => {
         console.log("conversationId", senderId);
         const conversations = await Chat.find({
             _id: conversationId,
-        }).populate("participants", "_id name avatar");
+        }).populate("messages.senderId", "_id name avatar");
         let data = conversations[0].messages.filter(message => !message.deletedBy.includes(senderId));
         for (let i = 0; i < data.length; i++) {
             if (data[i].recall) {

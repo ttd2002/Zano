@@ -15,13 +15,14 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Video } from 'expo-av';
 import CustomDocumentMessage from './CustomDocumentMessage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Swipeable} from 'react-native-gesture-handler'
+import { Swipeable } from 'react-native-gesture-handler'
+import EmojiSelector from 'react-native-emoji-selector';
+import UploadModal from '../Personal/UploadModal';
 const chatRoom = () => {
     const [recording, setRecording] = useState();
 
     const navigation = useNavigation();
     const [messages, setMessages] = useState([])
-    const [text, setText] = useState('')
 
     const params = useLocalSearchParams();
     const router = useRouter();
@@ -29,8 +30,12 @@ const chatRoom = () => {
 
     const [selectedMessage, setSelectedMessage] = useState(null);
     const [showLongPressView, setShowLongPressView] = useState(false);
-    const [source, setSource] = useState(null);
-
+    const [inputText, setInputText] = useState('');
+    const [showEmojiSelector, setShowEmojiSelector] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const handleEmojiSelect = (emoji) => {
+        setInputText(prevText => prevText + emoji);
+    };
     const video = useRef(null)
     socket.on("connection", () => {
         console.log("Connected to the Socket server")
@@ -219,60 +224,64 @@ const chatRoom = () => {
         try {
             let result = {};
             if (mode === "gallery") {
-                await ImagePicker.requestMediaLibraryPermissionsAsync();
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== 'granted') {
+                    alert('Quyền truy cập vào thư viện ảnh bị từ chối!');
+                    return;
+                }
                 result = await ImagePicker.launchImageLibraryAsync({
                     mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                    allowsEditing: true,
+                    allowsMultipleSelection: true,
                     aspect: [1, 1],
                     quality: 1,
-                })
+                });
             } else {
                 await ImagePicker.requestCameraPermissionsAsync();
                 result = await ImagePicker.launchCameraAsync({
                     cameraType: ImagePicker.CameraType.front,
-                    allowsEditing: true,
                     aspect: [1, 1],
                     quality: 1,
                 });
             }
-            if (!result.canceled) {
-                const uri = result.assets[0].uri
-                const type = result.assets[0].mimeType
-                const name = "imageChat"
-                const source = { uri, name, type }
-                // setAvatar(uri)
-                // setSource(source)
-                // setModalVisible(false)
-                const data = new FormData();
-                data.append('file', source)
-                fetch(`https://api.cloudinary.com/v1_1/dbtgez7ua/auto/upload?upload_preset=DemoZanoo`, {
-                    method: 'POST',
-                    // fetch(`http://${ipAddress}:3000/mes/uploadImageApp`, {
-                    //     method: 'POST',
-                    body: data,
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'multipart/form-data'
-                    }
-                }).then(res => res.json()).then(data => {
+            if (!result.cancelled) {
+                const selectedImages = result.assets || []; // Lấy danh sách các ảnh đã chọn
+                for (let i = 0; i < selectedImages.length; i++) {
+                    const image = selectedImages[i];
+                    const uri = image.uri;
+                    const type = image.mimeType;
+                    const name = "imageChat";
+                    const source = { uri, name, type };
+                    const data = new FormData();
+                    data.append('file', source);
+                    const response = await fetch(`https://api.cloudinary.com/v1_1/dbtgez7ua/auto/upload?upload_preset=DemoZanoo`, {
+                        method: 'POST',
+                        body: data,
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    });
+                    const responseData = await response.json();
                     const messages = {
                         _id: Math.random().toString(36).substring(7),
-                        image: data.url,
+                        image: responseData.url,
                         createdAt: new Date(),
                         user: {
                             _id: params?.senderId,
-                            name: name, avatar: avatar
+                            name: name,
+                            avatar: avatar
                         },
                     };
-                    onSend(messages, params?.senderId, params?.conversationId, "image")
-
-                })
+                    onSend(messages, params?.senderId, params?.conversationId, "image");
+                }
+                setModalVisible(false)
             }
         } catch (error) {
-            console.log("Error uploading Image: " + error)
-            setModalVisible(false)
+            console.log("Error uploading Image: " + error);
+            setModalVisible(false);
         }
-    }
+    };
+
     // const saveImage = async (imageUri) => {
     //     try {
     //         const messages = {
@@ -518,16 +527,23 @@ const chatRoom = () => {
     };
     const renderAvatar = (props) => {
         return (
-          <View style={{ marginRight: 5 }}>
-            <Image
-              source={{ uri: props.currentMessage.user.avatar }}
-              style={{ width: 40, height: 40, borderRadius: 20 }}
-            />
-          </View>
+            <View style={{ marginRight: 5 }}>
+                <Image
+                    source={{ uri: props.currentMessage.user.avatar }}
+                    style={{ width: 40, height: 40, borderRadius: 20 }}
+                />
+            </View>
         );
-      }
+    }
     return (
         <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#e2e8f1" }}>
+            <UploadModal
+                modalVisible={modalVisible}
+                onBackPress={() => setModalVisible(false)}
+                cancelable
+                onCameraPress={() => uploadImage()}
+                onGalleryPress={() => uploadImage("gallery")}
+            ></UploadModal>
             <View style={{ backgroundColor: '#00abf6', justifyContent: 'flex-start', alignItems: 'center', flexDirection: "row", alignItems: "center", gap: 10, height: 50 }}>
                 <TouchableOpacity style={{ marginLeft: 5 }} onPress={() => { router.replace('/Message') }}>
                     <Ionicons name="chevron-back" size={24} color="white" />
@@ -548,19 +564,24 @@ const chatRoom = () => {
             <GiftedChat
                 messages={messages}
                 onSend={messages => onSend(messages, params?.senderId, params?.conversationId, "text")}
-                user={{ _id: params?.senderId , name: name, avatar: avatar}}
-                onInputTextChanged={setText}
+                user={{ _id: params?.senderId, name: name, avatar: avatar }}
+                //onInputTextChanged={setText}
+                text={inputText} // Sử dụng inputText làm nội dung của thanh chat
+                onInputTextChanged={text => setInputText(text)}
                 // renderUsername={true}
                 // renderAvatar={(props) => <Image style={{height: 50, width: 50, borderRadius: 50, resizeMode:'contain'}} source={{uri: props.currentMessage.user.avatar}}/>}
                 // renderUsername={(props) => <Text style={{color: 'black'}}>{props.currentMessage.user.name}</Text>}
                 renderSend={(props) => (
                     <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 14 }}>
-                        {text.length > 0 && (
+                        <TouchableOpacity onPress={() => showEmojiSelector ? setShowEmojiSelector(false) : setShowEmojiSelector(true)}>
+                            <Ionicons name="happy-outline" size={24} color="black" />
+                        </TouchableOpacity>
+                        {inputText.length > 0 && (
                             <Send {...props} containerStyle={{ justifyContent: 'center' }}>
                                 <Ionicons name='send' size={28} />
                             </Send>
                         )}
-                        {text.length === 0 && (
+                        {inputText.length === 0 && (
                             <>
                                 <TouchableOpacity onPress={recording ? stopRecording : startRecording}>
                                     {recording ? <Ionicons name='mic-outline' size={28} /> : <Ionicons name='mic' size={28} />}
@@ -568,12 +589,13 @@ const chatRoom = () => {
                                 <TouchableOpacity onPress={pickVideo}>
                                     <Entypo name='folder-video' size={28} />
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => { uploadImage("gallery") }}>
+                                <TouchableOpacity onPress={() => { setModalVisible(true) }}>
                                     <Ionicons name='image-outline' size={28} />
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={handleDocumentSelection}>
                                     <Ionicons name='document-attach' size={28} />
                                 </TouchableOpacity>
+
                             </>
                         )}
                     </View>
@@ -653,6 +675,13 @@ const chatRoom = () => {
                     </TouchableOpacity>
                 </View>
             )}
+            {showEmojiSelector && (
+                <View style={styles.emojiSelectorContainer}>
+                    <EmojiSelector
+                        onEmojiSelected={handleEmojiSelect} // Callback khi chọn emoji
+                    />
+                </View>
+            )}
         </KeyboardAvoidingView>
     );
 }
@@ -685,5 +714,13 @@ const styles = StyleSheet.create({
     fileName: {
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    emojiSelectorContainer: {
+        position: 'absolute',
+        bottom: 60, // Điều chỉnh vị trí hiển thị EmojiSelector tùy theo thiết kế của bạn
+        width: '80%',
+        backgroundColor: '#ffffff',
+        borderTopWidth: 1,
+        borderTopColor: '#cccccc',
     },
 });

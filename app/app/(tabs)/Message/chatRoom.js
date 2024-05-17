@@ -158,6 +158,8 @@ const chatRoom = () => {
                     createdAt: message.timestamp,
                     user: {
                         _id: message.senderId,
+                        name: "Đại",
+                        avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSV-xkVfYg_XMnQBwzE3zNgm0pLNSgSTVi7cK-wkot3-A&s"
                     },
                     ...messageContent,
                 };
@@ -551,9 +553,8 @@ const chatRoom = () => {
                 onSend={messages => onSend(messages, params?.senderId, params?.conversationId, "text")}
                 user={{ _id: params?.senderId , name: name, avatar: avatar}}
                 onInputTextChanged={setText}
-                // renderUsername={true}
-                // renderAvatar={(props) => <Image style={{height: 50, width: 50, borderRadius: 50, resizeMode:'contain'}} source={{uri: props.currentMessage.user.avatar}}/>}
-                // renderUsername={(props) => <Text style={{color: 'black'}}>{props.currentMessage.user.name}</Text>}
+                renderUsername={true}
+                renderAvatar={(props) => <Image style={{height: 20, width: 20, borderRadius: 20, resizeMode:'contain'}} source={{uri: props.currentMessage.user.avatar}}/>}
                 renderSend={(props) => (
                     <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 14 }}>
                         {text.length > 0 && (

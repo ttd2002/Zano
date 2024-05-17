@@ -39,7 +39,7 @@ const index = () => {
       const userId = user._id;
       const listFriend = user.listFriend;
       const friendRequestIds = user.friendRequests;
-      const token = await AsyncStorage.getItem(token);
+      const token = await AsyncStorage.getItem("token");
       setToken(token)
       setUserId(userId);
       setListFriend(listFriend);

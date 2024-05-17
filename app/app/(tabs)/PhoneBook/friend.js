@@ -24,7 +24,8 @@ const Friend = () => {
     fetchUser();
   }, []);
   useEffect(() => {
-    fetchFriends();
+    if (userId)
+      fetchFriends();
   }, [userId]);
   console.log('listFriend', friends);
   const fetchFriends = async () => {
@@ -123,7 +124,7 @@ const Friend = () => {
                 {group.map((item, subIndex) => (
                   <View key={subIndex} style={{ width: '100%', height: 'auto', backgroundColor: 'white', padding: 15, marginTop: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={{ uri: avatar? avatar :  'https://phongreviews.com/wp-content/uploads/2022/11/avatar-facebook-mac-dinh-15.jpg' }} />
+                      <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={{ uri: avatar ? avatar : 'https://phongreviews.com/wp-content/uploads/2022/11/avatar-facebook-mac-dinh-15.jpg' }} />
                       <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '50%' }}>{item.name}</Text>
                       <Ionicons name="call-outline" size={26} color="black" />
                       <Feather name="video" size={24} color="black" />

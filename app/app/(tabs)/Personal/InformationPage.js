@@ -171,7 +171,7 @@ const InformationPage = () => {
                 <View>
                     <TouchableOpacity
                         onPress={() => { 
-                            router.navigate({
+                            router.replace({
                                 pathname: '/Personal/editInformation',
                             })
                          }}

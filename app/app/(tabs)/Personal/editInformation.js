@@ -46,6 +46,7 @@ const EditInformation = () => {
     const [gender, setGender] = useState("");
     const [avatar, setAvatar] = useState("");
     const [token, setToken] = useState("");
+    const [photo, setPhoto] = useState(null)
     const radioButtons = useMemo(() => ([
         {
             id: '1',
@@ -151,25 +152,31 @@ const EditInformation = () => {
                 const name = "imageUser.jpg"
                 const filesize = result.assets[0].filesize
                 const source = { uri, name, type }
-                console.log('source', source);
-                console.log(filesize);
+                setPhoto(source)
+                // console.log('source', source);
+                // console.log(filesize);
                 // await editProfileHandle(result.assets[0].uri);
                 // await editProfileHandle(formData);
-                console.log(result);
-                handleUpdata(source)
+                // console.log(result);
+                // handleUpdata(source)
+                setAvatar(uri)
+                setModalVisible(false)
             }
         } catch (error) {
             console.log("Error uploading Image: " + error)
             setModalVisible(false)
         }
     }
-    const handleUpdata = async (photo) => {
+    const handleUpdata = async () => {
         const data = new FormData();
 
-        data.append('avatar', photo)
+        if(photo){
+            data.append('avatar', photo)
+        }
+        
         data.append('name', name)
-        console.log(data);
         data.append('birthDate', birthDate)
+        data.append('gender', selectedId==1?"male":"female")
         // data.append("upload_preset", "DemoZanoo")
         // data.append("cloud_name", "dbtgez7ua")
         // fetch("https://api.cloudinary.com/v1_1/dbtgez7ua/image/upload",{
@@ -278,7 +285,7 @@ const EditInformation = () => {
     // };
 
 
-
+    console.log(selectedId);
     return (
         <View style={styles.container}>
             <View style={{ height: 'auto', width: '100%', backgroundColor: '#00abf6', flexDirection: 'row', alignItems: 'center', padding: 10, gap: 15 }}>

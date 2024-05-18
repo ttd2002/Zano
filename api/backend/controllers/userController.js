@@ -216,9 +216,9 @@ const getListFriendRequestIdsSendApp = async (req, res) => {
         }
 
         // Tìm danh sách yêu cầu kết bạn của người dùng
-        const friendRequests = await User.find({ friendRequests: { $in: [userId] } });
+        const friendRequests = await User.find({ friendRequests: { $in: [userId] } }).select('_id name avatar');
         const friendRequestIds = friendRequests.map(user => user._id.toString());
-        res.status(200).json(friendRequestIds);
+        res.status(200).json(friendRequests);
 
     } catch (error) {
         console.log("Error in getListFriendRequest controller: ", error.message);
@@ -227,11 +227,12 @@ const getListFriendRequestIdsSendApp = async (req, res) => {
 }
 const respondToFriendRequestApp = async (req, res) => {
     try {
-        // const responderId = req.user._id;// Người nhận yêu cầu kết bạn
-        // const requestId = req.params.id;// Người gửi yêu cầu kết bạn
+        // const responderId = req.user._id; // Người nhận yêu cầu kết bạn
+        // const requestId = req.params.id; // Người gửi yêu cầu kết bạn
         const { responderId, requestId, response } = req.body; // 1: Chấp nhận, 0: Từ chối
         console.log(responderId, requestId, response);
-        // // Kiểm tra xem yêu cầu kết bạn có tồn tại không
+
+        // Kiểm tra xem yêu cầu kết bạn có tồn tại không
         const requester = await User.findById(requestId);
         if (!requester) {
             return res.status(404).json({ error: "Requester not found" });
@@ -248,31 +249,62 @@ const respondToFriendRequestApp = async (req, res) => {
             return res.status(400).json({ error: "Friend request not found" });
         }
 
-        // Nếu responder chấp nhận yêu cầu kết bạn
-        console.log(response);
         if (response === 1) {
+            // Nếu responder chấp nhận yêu cầu kết bạn
             // Thêm người gửi yêu cầu vào danh sách bạn bè của người nhận
             responder.listFriend.push(requestId);
-            await responder.save();
 
             // Thêm người nhận vào danh sách bạn bè của người gửi yêu cầu
             requester.listFriend.push(responderId);
-            await requester.save();
 
             // Xóa yêu cầu kết bạn khỏi danh sách yêu cầu kết bạn của người nhận
             responder.friendRequests = responder.friendRequests.filter(id => id.toString() !== requestId.toString());
+
             await responder.save();
+            await requester.save();
 
             return res.status(200).json({ message: `You and ${requester.name} are now friends` });
-        }
+        } else if (response === 0) {
+            // Nếu responder từ chối yêu cầu kết bạn
+            // Xóa yêu cầu kết bạn khỏi danh sách yêu cầu kết bạn của người nhận
+            responder.friendRequests = responder.friendRequests.filter(id => id.toString() !== requestId.toString());
 
-        return res.status(200).json({ message: `You have rejected friend request from ${requester.name}` });
+            await responder.save();
+
+            return res.status(200).json({ message: `You have rejected the friend request from ${requester.name}` });
+        } else {
+            // Trường hợp response không hợp lệ
+            return res.status(400).json({ error: "Invalid response value" });
+        }
 
     } catch (error) {
         console.log("Error in respondToFriendRequest controller: ", error.message);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+const recallFriendRequestSended = async (req, res) => {
+    try {
+        const { responderId, requestId } = req.body; 
+
+        // Kiểm tra xem yêu cầu kết bạn có tồn tại không
+        const responder = await User.findById(responderId);
+        
+        // Lọc ra yêu cầu kết bạn tương ứng và loại bỏ nó khỏi danh sách
+        responder.friendRequests = responder.friendRequests.filter(id => id.toString() !== requestId.toString());
+
+        // Lưu thay đổi vào cơ sở dữ liệu
+        await responder.save();
+
+        // Trả về thông báo thành công
+        return res.status(200).json({ message: `You have successfully recalled the friend request` });
+
+    } catch (error) {
+        console.log("Error in recallFriendRequestSended controller: ", error.message);
+        // Trả về thông báo lỗi nếu có lỗi xảy ra
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
 //Web
 const updateUser = async (req, res) => {
     const { name, gender, birthDate, avatar } = req.body;
@@ -372,5 +404,6 @@ module.exports = {
     respondToFriendRequestApp,
     getListUsers,
     getAllUsers,
-    getFriendRequestsByUser
+    getFriendRequestsByUser,
+    recallFriendRequestSended
 };

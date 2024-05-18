@@ -136,6 +136,59 @@ const login2 = async (req, res) => {
         res.status(500).json({ message: "login failed" });
     }
 }; 
-module.exports = {
-    register, login, login2
+const changePassword = async (req, res) => {
+    try {
+        const { userId, oldPassword, newPassword } = req.body;
+
+        // Tìm người dùng trong cơ sở dữ liệu
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Kiểm tra mật khẩu cũ
+        const passwordMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!passwordMatch) {
+            return res.status(401).json({ message: "Sai mật khẩu" });
+        }
+
+        // Mã hóa mật khẩu mới
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+        // Cập nhật mật khẩu mới của người dùng
+        user.password = hashedNewPassword;
+        await user.save();
+
+        res.status(200).json({ message: "Đổi mật khẩu thành công" });
+    } catch (error) {
+        console.log("Error changing password:", error);
+        res.status(500).json({ message: "Failed to change password" });
+    }
 };
+const changePasswordByPhone = async (req, res) => {
+    try {
+        const { phone, newPassword } = req.body;
+
+        // Tìm người dùng trong cơ sở dữ liệu bằng số điện thoại
+        const user = await User.findOne({ phone });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        // Mã hóa mật khẩu mới
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+        // Cập nhật mật khẩu mới của người dùng
+        user.password = hashedNewPassword;
+        await user.save();
+
+        res.status(200).json({ message: "Đổi mật khẩu thành công" });
+    } catch (error) {
+        console.log("Error changing password by phone:", error);
+        res.status(500).json({ message: "Failed to change password" });
+    }
+};
+
+module.exports = {
+    register, login, login2, changePassword,changePasswordByPhone
+};
+

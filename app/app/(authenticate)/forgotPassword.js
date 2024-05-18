@@ -65,7 +65,9 @@ const ForgotPassword = () => {
                             // sendVerification()
                             router.navigate({
                                 pathname: '/(authenticate)/changePassword',
-                                query: { phone: phone }
+                                params: {
+                                    phone: phone
+                                }
                             })
                         }
                     }}

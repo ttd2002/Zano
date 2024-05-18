@@ -60,7 +60,7 @@ io.on("connection", (socket) => {
             })
             const messageId = conversation2.messages[conversation.messages.length - 1]._id;
             console.log("messageId", JSON.stringify(messageId));
-            newMessage._id = JSON.stringify(messageId);
+            newMessage._id = messageId;
             newMessage.timestamp = conversation2.messages[conversation.messages.length - 1].timestamp;
             //emit the message to the receiver
             socket.to(conversationId).emit("receiveMessage", newMessage);

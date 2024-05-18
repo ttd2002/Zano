@@ -69,7 +69,7 @@ const chatRoom = () => {
     useEffect(() => {
         const receiveMessageHandler = (newMessage) => {
             // Kiểm tra nếu tin nhắn được nhận từ socket không phải là tin nhắn do chính client gửi
-            if (newMessage.senderId !== params?.senderId) {
+            // if (newMessage.senderId !== params?.senderId) {
                 let messageContent;
                 switch (newMessage.type) {
                     case "text":
@@ -90,7 +90,6 @@ const chatRoom = () => {
                     default:
                         messageContent = { text: newMessage.message };
                 }
-                console.log("tessttt", messages)
                 const newMess = {
                     _id: newMessage._id,
                     createdAt: newMessage.timestamp,
@@ -99,9 +98,10 @@ const chatRoom = () => {
                     },
                     ...messageContent,
                 };
+                console.log('newMesRecei',newMess);
                 // Chỉ thêm tin nhắn mới vào state nếu không phải là tin nhắn do chính client gửi
                 setMessages(previousMessages => GiftedChat.append(previousMessages, newMess));
-            }
+            // }
         };
 
         socket.on("receiveMessage", receiveMessageHandler);
@@ -161,7 +161,9 @@ const chatRoom = () => {
                     _id: message._id,
                     createdAt: message.timestamp,
                     user: {
-                        _id: message.senderId,
+                        _id: message.senderId._id,
+                        name: message.senderId.name,
+                        avatar: message.senderId.avatar
                     },
                     ...messageContent,
                 };
@@ -189,7 +191,7 @@ const chatRoom = () => {
     //     }
     // }
     const onSend = useCallback(async (messages = [], senderId, conversationId, type) => {
-        setMessages(previousMessages => GiftedChat.append(previousMessages, messages));
+        // setMessages(previousMessages => GiftedChat.append(previousMessages, messages));
 
         if (type === "image") {
             const message = messages.image;
@@ -545,7 +547,10 @@ const chatRoom = () => {
                 onGalleryPress={() => uploadImage("gallery")}
             ></UploadModal>
             <View style={{ backgroundColor: '#00abf6', justifyContent: 'flex-start', alignItems: 'center', flexDirection: "row", alignItems: "center", gap: 10, height: 50 }}>
-                <TouchableOpacity style={{ marginLeft: 5 }} onPress={() => { router.replace('/Message') }}>
+                <TouchableOpacity style={{ marginLeft: 10 }} onPress={() => { 
+                    // router.replace('/Message') 
+                    navigation.goBack()
+                    }}>
                     <Ionicons name="chevron-back" size={24} color="white" />
                 </TouchableOpacity>
                 <Text style={{ fontSize: 20, color: 'white', width: '75%' }}>{params?.uName}</Text>
@@ -564,12 +569,12 @@ const chatRoom = () => {
             <GiftedChat
                 messages={messages}
                 onSend={messages => onSend(messages, params?.senderId, params?.conversationId, "text")}
-                user={{ _id: params?.senderId, name: name, avatar: avatar }}
+                user={{ _id: params?.senderId}}
                 //onInputTextChanged={setText}
                 text={inputText} // Sử dụng inputText làm nội dung của thanh chat
                 onInputTextChanged={text => setInputText(text)}
-                // renderUsername={true}
-                // renderAvatar={(props) => <Image style={{height: 50, width: 50, borderRadius: 50, resizeMode:'contain'}} source={{uri: props.currentMessage.user.avatar}}/>}
+                renderUsernameOnMessage={true}
+                renderAvatar={(props) => <Image style={{height: 25, width: 25, borderRadius: 25, resizeMode:'contain'}} source={{uri: props.currentMessage.user.avatar}}/>}
                 // renderUsername={(props) => <Text style={{color: 'black'}}>{props.currentMessage.user.name}</Text>}
                 renderSend={(props) => (
                     <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 14 }}>

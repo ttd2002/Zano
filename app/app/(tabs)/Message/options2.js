@@ -29,10 +29,10 @@ const Options2 = ({ type, conversation, userId }) => {
         const handleTypeChange = async () => {
             if (type === 'AddAdmin') {
                 let updatedParticipants = [...conversation.participants];
-                updatedParticipants = updatedParticipants.filter(participant => {
-                    const exists = conversation.listAdmins.some(admin => admin === participant._id);
-                    return !exists;
-                });
+                // updatedParticipants = updatedParticipants.filter(participant => {
+                //     const exists = conversation.listAdmins.some(admin => admin === participant._id);
+                //     return !exists;
+                // });
                 setDataFilter(updatedParticipants);
                 setDataFinal(conversation.listAdmins)
             }
@@ -55,6 +55,15 @@ const Options2 = ({ type, conversation, userId }) => {
                 setDataFilter(conversation.participants);
                 setDataFinal(conversation.participants);
             }
+            if (type === 'ChangeLeader') {
+                /*                 let updatedParticipants = [...conversation.participants];
+                                updatedParticipants = updatedParticipants.filter(participant => {
+                                    const exists = conversation.listAdmins.some(admin => admin === participant._id);
+                                    return !exists;
+                                }); */
+                setDataFilter(conversation.participants);
+                setDataFinal(conversation.participants);
+            }
         };
         handleTypeChange();
     }, [friends, type]);
@@ -64,7 +73,7 @@ const Options2 = ({ type, conversation, userId }) => {
     console.log('userId', userId);
     console.log('participants', conversation.participants);
     console.log('listAdmin', conversation.listAdmins);
-    
+
     console.log('dataFilter', dataFilter);
     console.log('dataFinal', dataFinal);
     const fetchFriends = async () => {
@@ -147,7 +156,7 @@ const Options2 = ({ type, conversation, userId }) => {
                 }
             })
             .catch(error => {
-                console.error('Error deleting member:', error);
+                // console.error('Error deleting member:', error);
                 Alert.alert('Xóa thành viên thất bại');
             });
     }
@@ -174,7 +183,7 @@ const Options2 = ({ type, conversation, userId }) => {
                 }
             })
             .catch(error => {
-                console.error('Error deleting member:', error);
+                // console.error('Error deleting member:', error);
                 Alert.alert('Xóa thành viên thất bại');
             });
     }
@@ -200,7 +209,40 @@ const Options2 = ({ type, conversation, userId }) => {
                     Alert.alert('Cập nhật thành công')
                     socket.emit("requestRender");
                 } else {
-                    Alert.alert('Thay doi group thất bại')
+                    Alert.alert('Thêm thành viên thất bại')
+                }
+            })
+            .catch(error => {
+                // console.error('Error deleting member:', error);
+                Alert.alert('Thêm thành viên thất bại');
+            });
+    }
+    const handleChangeLeader = async (memId) => {
+        console.log('memId', memId);
+        fetch(`http://${ipAddress}:3000/group/conversation/changeLeader`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                conversationId: conversation._id,
+                memberId: memId
+            }),
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json' // Sử dụng 'application/json' thay vì 'multipart/form-data'
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log(data.conversation);
+                if (data.conversation) {
+                    // const updatedParticipants = dataFilter.filter(participant => participant._id !== memId);
+                    // console.log('updatedParticipants', updatedParticipants);
+                    // // Cập nhật dữ liệu mới cho state
+                    // setDataFilter([...updatedParticipants]);
+                    // conversation.leader = data.conversation.leader;
+                    Alert.alert('Thay đổi thành công')
+                    socket.emit("requestRender");
+                } else {
+                    Alert.alert('Thay đổi thất bại')
                 }
             })
             .catch(error => {
@@ -208,24 +250,25 @@ const Options2 = ({ type, conversation, userId }) => {
                 Alert.alert('Xóa thành viên thất bại');
             });
     }
-
     return (
         <View style={{ flex: 1, padding: 10, width: windowWidth * 8 / 10, }}>
             {type === 'ViewMember' && (
                 dataFilter.map((item, subIndex) => (
-                    <View key={subIndex} style={{ width: '100%', height: 'auto', backgroundColor: 'white', padding: 15, marginTop: 2 }}>
+                    <View key={subIndex} style={{ width: '100%', height: 'auto', backgroundColor: 'white', padding: 5, marginTop: 2 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={{ uri: item.avatar ? item.avatar : 'https://phongreviews.com/wp-content/uploads/2022/11/avatar-facebook-mac-dinh-15.jpg' }} />
-                            <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '65%' }}>{item.name}</Text>
+                            <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '65%' }}>{item.name} {item._id === conversation.leader ? ' (Trưởng nhóm)' : conversation.listAdmins.includes(item._id) ? ' (Phó nhóm)' : ''}</Text>
 
                             <View style={styles.section}>
-                                {item._id === userId ? <></> : (<TouchableOpacity
-                                    onPress={() => {
-                                        handleDeleteMember(item._id);
-                                    }}
-                                >
-                                    <AntDesign name="delete" size={24} color="black" />
-                                </TouchableOpacity>)}
+                                {item._id !== userId && item._id !== conversation.leader && !conversation.listAdmins.includes(item._id) && conversation.listAdmins.includes(userId) ? (
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            handleDeleteMember(item._id);
+                                        }}
+                                    >
+                                        <AntDesign name="delete" size={24} color="black" />
+                                    </TouchableOpacity>
+                                ) : null}
 
                             </View>
                         </View>
@@ -233,17 +276,39 @@ const Options2 = ({ type, conversation, userId }) => {
                 ))
 
             )}
-            {type !== 'ViewMember' && (
+            {type === 'ChangeLeader' && (
+                dataFilter.map((item, subIndex) => (
+                    <View key={subIndex} style={{ width: '100%', height: 'auto', backgroundColor: 'white', padding: 5, marginTop: 2 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={{ uri: item.avatar ? item.avatar : 'https://phongreviews.com/wp-content/uploads/2022/11/avatar-facebook-mac-dinh-15.jpg' }} />
+                            <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '65%' }}>{item.name} {item._id === conversation.leader ? ' (Trưởng nhóm)' : conversation.listAdmins.includes(item._id) ? ' (Phó nhóm)' : ''}</Text>
+
+                            <View style={styles.section}>
+                                {item._id !== userId 
+                                && item._id !== conversation.leader 
+                                && conversation.listAdmins.includes(userId) 
+                                ? (
+                                    <TouchableOpacity style={{ flexDirection: 'row',borderWidth:1, borderRadius:5 }}
+                                        onPress={() => {
+                                            handleChangeLeader(item._id);
+                                        }}
+                                    >
+                                        <AntDesign name="key" size={24} color="gold" />
+                                        <AntDesign name="user" size={24} color="black" />
+                                    </TouchableOpacity>
+                                ) : null}
+
+                            </View>
+                        </View>
+                    </View>
+                ))
+
+            )}
+            {type === 'AddMember' && (
                 <View>
-                    <TouchableOpacity
-                        onPress={() => {
-                            { type === 'AddMember' ? handleAddMembers() : handleAddAdmin() }
-                        }}
-                    >
-                        <Text style={{ color: 'blue' }}>Lưu</Text>
-                    </TouchableOpacity>
+
                     {dataFilter.map((item, subIndex) => (
-                        <View key={subIndex} style={{ width: '100%', height: 'auto', backgroundColor: 'white', padding: 15, marginTop: 2 }}>
+                        <View key={subIndex} style={{ width: '100%', height: 'auto', backgroundColor: 'white', padding: 5, marginTop: 2 }}>
 
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={{ uri: item.avatar ? item.avatar : 'https://phongreviews.com/wp-content/uploads/2022/11/avatar-facebook-mac-dinh-15.jpg' }} />
@@ -258,6 +323,43 @@ const Options2 = ({ type, conversation, userId }) => {
                             </View>
                         </View>
                     ))}
+                    <TouchableOpacity style={{ height: 40, width: '100%', backgroundColor: 'green', pading: 10, alignItems: 'center', justifyContent: 'center', borderRadius: 10, marginTop: 10 }}
+                        onPress={() => {
+                            handleAddMembers()
+                            // { type === 'AddMember' ? handleAddMembers() : handleAddAdmin() }
+                        }}
+                    >
+                        <Text style={{ color: 'white', fontSize: 20 }}>Lưu</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+            {type === 'AddAdmin' && (
+                <View>
+
+                    {dataFilter.map((item, subIndex) => (
+                        <View key={subIndex} style={{ width: '100%', height: 'auto', backgroundColor: 'white', padding: 5, marginTop: 2 }}>
+
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={{ uri: item.avatar ? item.avatar : 'https://phongreviews.com/wp-content/uploads/2022/11/avatar-facebook-mac-dinh-15.jpg' }} />
+                                <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '65%' }}>{item.name}</Text>
+                                <View style={styles.section}>
+                                    <Checkbox
+                                        style={styles.checkbox}
+                                        value={dataFinal.includes(item._id)}
+                                        onValueChange={() => handleCheckboxChange(item._id)}
+                                    />
+                                </View>
+                            </View>
+                        </View>
+                    ))}
+                    <TouchableOpacity style={{ height: 40, width: '100%', backgroundColor: 'green', pading: 10, alignItems: 'center', justifyContent: 'center', borderRadius: 10, marginTop: 10 }}
+                        onPress={() => {
+                            // { type === 'AddMember' ? handleAddMembers() : handleAddAdmin() }
+                            handleAddAdmin()
+                        }}
+                    >
+                        <Text style={{ color: 'white', fontSize: 20 }}>Lưu</Text>
+                    </TouchableOpacity>
                 </View>
             )}
 

@@ -158,6 +158,21 @@ const getFriendsByUser = async (req, res) => {
         res.status(500).json({ message: "Error retrieving user's friends", error });
     }
 };
+const getFriendRequestsByUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const user = await User.findById(userId).populate("friendRequests", ["name", "phone","avatar"]);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        console.log(userId);
+        res.status(200).json({ friendRequests: user.friendRequests });
+    } catch (error) {
+        res.status(500).json({ message: "Error retrieving user's friends", error });
+    }
+};
 const sendFriendRequestApp = async (req, res) => {
     try {
         // const senderId = req.user._id;
@@ -296,7 +311,7 @@ const updateUser = async (req, res) => {
         // Trả về phản hồi thành công
         res.status(200).json(responseObject);
     } catch (error) {
-        console.log("Error in updateUser controller", error.message);
+        console.log("Error in updateUser controller", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
@@ -357,4 +372,5 @@ module.exports = {
     respondToFriendRequestApp,
     getListUsers,
     getAllUsers,
+    getFriendRequestsByUser
 };

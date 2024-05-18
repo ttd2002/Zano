@@ -78,7 +78,7 @@ const UserChat = ({ item, userId }) => {
                 <View style={{ gap: 10 }}>
                     <Text style={{ fontSize: 20, fontStyle: 'normal', alignItems: 'flex-start' }}>{item.isGroupChat ? `Group: ${item.name}` : item.name}</Text>
                     <Text style={{ fontSize: 10, color: 'grey', alignItems: 'flex-start' }}>
-                        {lastMessage ? getContentMessage() : '[Hình ảnh]'}
+                        {lastMessage ? getContentMessage() : '[Chưa có tin nhắn]'}
                     </Text>
                 </View>
             </View>

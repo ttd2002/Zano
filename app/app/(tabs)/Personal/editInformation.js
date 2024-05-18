@@ -46,6 +46,7 @@ const EditInformation = () => {
     const [gender, setGender] = useState("");
     const [avatar, setAvatar] = useState("");
     const [token, setToken] = useState("");
+    const [photo, setPhoto] = useState(null)
     const radioButtons = useMemo(() => ([
         {
             id: '1',
@@ -115,7 +116,8 @@ const EditInformation = () => {
 
     const handleButtonEdit = async () => {
         try {
-            await editProfileHandle();
+            await handleUpdata();
+            
             //router.replace("/Personal/InformationPage");
         } catch (error) {
             console.error("Error editing profile", error);
@@ -150,25 +152,31 @@ const EditInformation = () => {
                 const name = "imageUser.jpg"
                 const filesize = result.assets[0].filesize
                 const source = { uri, name, type }
-                console.log('source', source);
-                console.log(filesize);
+                setPhoto(source)
+                // console.log('source', source);
+                // console.log(filesize);
                 // await editProfileHandle(result.assets[0].uri);
                 // await editProfileHandle(formData);
-                console.log(result);
-                handleUpdata(source)
+                // console.log(result);
+                // handleUpdata(source)
+                setAvatar(uri)
+                setModalVisible(false)
             }
         } catch (error) {
             console.log("Error uploading Image: " + error)
             setModalVisible(false)
         }
     }
-    const handleUpdata = (photo) => {
+    const handleUpdata = async () => {
         const data = new FormData();
 
-        data.append('avatar', photo)
-        // data.append('name', 'acccc')
-        console.log(data);
-        // data.append('file', photo)
+        if(photo){
+            data.append('avatar', photo)
+        }
+        
+        data.append('name', name)
+        data.append('birthDate', birthDate)
+        data.append('gender', selectedId==1?"male":"female")
         // data.append("upload_preset", "DemoZanoo")
         // data.append("cloud_name", "dbtgez7ua")
         // fetch("https://api.cloudinary.com/v1_1/dbtgez7ua/image/upload",{
@@ -181,10 +189,16 @@ const EditInformation = () => {
                 'Accept': 'application/json',
                 'Content-Type': 'multipart/form-data'
             }
-        }).then(res => res.json()).then(data => {
+        }).then(res => res.json()).then(async data => {
             setAvatar(data.avatar)
             console.log(data);
+            await AsyncStorage.setItem('auth', JSON.stringify(data));
+            socket.emit("requestRender")
+            router.replace({
+                pathname: '/Personal/InformationPage',
+            })
         })
+        
     }
 
     // const saveImage = async (avatar) => {
@@ -222,67 +236,69 @@ const EditInformation = () => {
     //         });
     //     });
     // };
-    const editProfileHandle = async () => {
-        try {
-        // Tải dữ liệu của hình ảnh từ đường dẫn
-        // const responseFetch = await fetch(avatar);
-        // const blob = await responseFetch.blob();
+    // const editProfileHandle = async () => {
+    //     // try {
+    //     // Tải dữ liệu của hình ảnh từ đường dẫn
+    //     // const responseFetch = await fetch(avatar);
+    //     // const blob = await responseFetch.blob();
 
-        // Tạo đối tượng file từ dữ liệu đã tải xuống
-        // const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+    //     // Tạo đối tượng file từ dữ liệu đã tải xuống
+    //     // const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
 
-        // Tạo formData và thêm đối tượng file vào đó
-        // const formData = new FormData();
-        // formData.append('avatar', file);
-        // formData.append('name', name);
-        // formData.append('birthDate', birthDate);
-        // formData.append('gender', selectedId === "1" ? "male" : "female");
+    //     // Tạo formData và thêm đối tượng file vào đó
+    //     // const formData = new FormData();
+    //     // formData.append('avatar', file);
+    //     // formData.append('name', name);
+    //     // formData.append('birthDate', birthDate);
+    //     // formData.append('gender', selectedId === "1" ? "male" : "female");
 
-        // Gửi request axios với formData
-        const responseAxios = await axios.put(
-            `http://${ipAddress}:3000/users/${userId}/editProfile`,
-            {
-                // body: avatar,
-                // headers: {
-                //     Authorization: `Bearer ${token}`,
-                //     'Content-Type': 'multipart/form-data'
-                // }
-                name,
-                gender: selectedId === "1" ? "male" : "female",
-                birthDate
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+    //     // Gửi request axios với formData
+    //     const responseAxios = await axios.put(
+    //         `http://${ipAddress}:3000/users/${userId}/editProfile`,
+    //         {
+    //             // body: avatar,
+    //             // headers: {
+    //             //     Authorization: `Bearer ${token}`,
+    //             //     'Content-Type': 'multipart/form-data'
+    //             // }
+    //             name,
+    //             gender: selectedId === "1" ? "male" : "female",
+    //             birthDate
+    //         },
+    //         {
+    //             headers: {
+    //                 // Authorization: `Bearer ${token}`,
+    //                 'Content-Type': 'application/json'
+    //             }
+    //         }
+    //     );
 
-        // Xử lý phản hồi từ server
-        const user2 = responseAxios.data;
-        console.log("stad", user2);
-        // Kiểm tra và xử lý phản hồi
+    //     // Xử lý phản hồi từ server
+    //     const user2 = responseAxios.data;
+    //     console.log("stad", user2);
+    //     // Kiểm tra và xử lý phản hồi
 
-        } catch (error) {
-            console.error("Lỗi khi chỉnh sửa thông tin", error);
-        }
+    //     // } catch (error) {
+    //     //     console.error("Lỗi khi chỉnh sửa thông tin", error);
+    //     // }
 
-    };
+    // };
 
 
-
+    console.log(selectedId);
     return (
         <View style={styles.container}>
             <View style={{ height: 'auto', width: '100%', backgroundColor: '#00abf6', flexDirection: 'row', alignItems: 'center', padding: 10, gap: 15 }}>
                 <TouchableOpacity
                     onPress={() => {
-                        navigate.goBack();
+                        router.replace({
+                            pathname: '/Personal/InformationPage',
+                        })
                     }}
                 >
                     <Feather name="x" size={24} color="white" />
                 </TouchableOpacity>
-                <Text style={{ color: 'white', fontSize: 20, fontStyle: '600' }}>Thông tin cá nhân</Text>
+                <Text style={{ color: 'white', fontSize: 20, fontStyle: 'normal' }}>Thông tin cá nhân</Text>
             </View>
             <View style={{ height: '40%', width: '100%', backgroundColor: '#fff', padding: 15, alignItems: 'center', justifyContent: 'center' }}>
                 <View style={{ flexDirection: 'row' }}>
@@ -357,8 +373,7 @@ const EditInformation = () => {
                 <TouchableOpacity
                     onPress={() => {
                         handleButtonEdit()
-                        setModalVisible(false)
-                        socket.emit("requestRender")
+                        
                     }}
                     style={{ height: 50, width: '95%', backgroundColor: '#00abf6', justifyContent: 'center', alignItems: 'center', borderRadius: 20, marginTop: 20 }}>
                     <Text style={{ color: 'white', fontSize: 20, fontStyle: 'normal' }}>Lưu</Text>

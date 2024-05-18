@@ -148,7 +148,8 @@ const index = () => {
   const getFriendRequestIdsSend = async () => {
     try {
       const response = await axios.get(`http://${ipAddress}:3000/users/app/getFriendRequestIdsSend/${userId}`);
-      setFriendRequestSendIds(response.data)
+      const friendRequestIdsTemp = response.data.map(item => item._id);
+      setFriendRequestSendIds(friendRequestIdsTemp)
 
     } catch (error) {
       console.log("error", error);

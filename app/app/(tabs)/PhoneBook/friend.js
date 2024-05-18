@@ -67,7 +67,7 @@ const Friend = () => {
         <View style={{ width: '100%', height: 'auto', backgroundColor: 'white', padding: 15 }}>
           <TouchableOpacity style={{ flexDirection: 'row', alignContent: 'space-between', width: '100%', height: 60, alignItems: 'center', gap: 18 }}
             onPress={() => {
-              router.navigate({
+              router.replace({
                 pathname: '/PhoneBook/friendRequest',
               })
             }}>
@@ -100,11 +100,11 @@ const Friend = () => {
 
 
         <View style={{ flexDirection: 'row', width: '100%', height: 54, marginTop: 8, backgroundColor: 'white', padding: 13, gap: 15 }}>
-          <TouchableOpacity style={{ height: 30, width: 200, borderRadius: 20, border: '1px solid grey', alignItems: 'center', justifyContent: 'center' }}
+          <TouchableOpacity style={{ height: 30, width: 200, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
             onPress={() => {
 
             }}>
-            <Text>Danh sách bạn bè </Text>
+            <Text style={{fontSize:20}}>Danh sách bạn bè </Text>
           </TouchableOpacity>
           {/* <TouchableOpacity style={{ height: 30, width: 110, borderRadius: 20, border: '1px solid grey', alignItems: 'center', justifyContent: 'center' }}
             onPress={() => {

@@ -1,19 +1,33 @@
-import { useRoute } from '@react-navigation/core';
-import axios from 'axios';
-import { useRouter,useNavigation,useLocalSearchParams } from 'expo-router';
-import React, { useState } from 'react';
-import { View, TextInput, Pressable, Text, StyleSheet,TouchableOpacity,Alert } from 'react-native';
-import { ipAddress } from '../../config/env';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NavigationContainer } from '@react-navigation/native';
-
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { useNavigation, useRouter } from "expo-router";
 import { Ionicons } from '@expo/vector-icons';
-const ChangePassword = () => {
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from 'axios'; // Import thư viện axios để gửi yêu cầu API
+import { ipAddress } from "../../../config/env";
+const ChangePasswordPage = () => {
     const navigation = useNavigation();
     const router = useRouter()
+    const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
-    const params = useLocalSearchParams();
+    const [userId, setUserId] = useState('');
+
+    useEffect(() => {
+        fetchUser();
+    }, []);
+
+    const fetchUser = async () => {
+        try {
+            const userString = await AsyncStorage.getItem("auth");
+            const user = JSON.parse(userString);
+            const userId = user._id;
+            setUserId(userId);
+        } catch (error) {
+            // console.error("Error fetching user data", error);
+        }
+    };
+
     const handleChangePassword = async () => {
         // Kiểm tra mật khẩu mới và xác nhận mật khẩu mới
         if (newPassword !== confirmNewPassword) {
@@ -23,18 +37,17 @@ const ChangePassword = () => {
     
         try {
             // Gửi yêu cầu đổi mật khẩu tới server
-            const response = await axios.post(`http://${ipAddress}:3000/auth/changePasswordByPhone`, {
-                phone: params?.phone,
+            const response = await axios.post(`http://${ipAddress}:3000/auth/changePassword`, {
+                userId: userId,
+                oldPassword: currentPassword,
                 newPassword: newPassword,
             });
     
             // Xử lý kết quả từ server
             Alert.alert(response.data.message);
-            router.replace({
-                pathname: '/(authenticate)/home'
-            })
     
             // Reset các trường về rỗng sau khi đổi mật khẩu thành công
+            setCurrentPassword('');
             setNewPassword('');
             setConfirmNewPassword('');
     
@@ -44,7 +57,7 @@ const ChangePassword = () => {
             Alert.alert(error.response.data.message); 
         }
     };
-    console.log(params?.phone)
+    
 
     return (
         <View style={styles.container}>
@@ -56,6 +69,13 @@ const ChangePassword = () => {
                 <View style={{ width: 80 }}></View>
             </View>
             <View style={styles.content}>
+                <Text style={styles.label}>Mật khẩu hiện tại:</Text>
+                <TextInput
+                    style={styles.input}
+                    secureTextEntry={true}
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                />
                 <Text style={styles.label}>Mật khẩu mới:</Text>
                 <TextInput
                     style={styles.input}
@@ -131,4 +151,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ChangePassword;
+export default ChangePasswordPage;

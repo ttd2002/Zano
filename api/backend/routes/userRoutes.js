@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 require("dotenv").config();
 const protectRoute = require("../middlewares/auth.js");
-const { getUser, getFinded, getMessaged, addMessaged, addFinded, editProfile, editAvatar, changePassword, getFriendsByUser, getProfile, updateUser, sendFriendRequestApp, getListFriendRequestIdsSendApp, respondToFriendRequestApp, getAllUsers, getListUsers, getFriendRequestsByUser } = require("../controllers/userController");
+const { getUser, getFinded, getMessaged, addMessaged, addFinded, editProfile, editAvatar, changePassword, getFriendsByUser, getProfile, updateUser, sendFriendRequestApp, getListFriendRequestIdsSendApp, respondToFriendRequestApp, getAllUsers, getListUsers, getFriendRequestsByUser, recallFriendRequestSended } = require("../controllers/userController");
 const { uploadAvatarMiddleware } = require("../middlewares/uploadAvatar.js");
 const { handleFileSizeError } = require("../middlewares/uploadImages.js");
 
@@ -19,6 +19,7 @@ router.get("/:userId/friendRequests", getFriendRequestsByUser);
 router.post("/app/sendFriendRequest", sendFriendRequestApp);
 router.get("/app/getFriendRequestIdsSend/:id", getListFriendRequestIdsSendApp);
 router.post("/app/respondToFriendRequest", respondToFriendRequestApp);
+router.post("/app/recallFriendRequestSended", recallFriendRequestSended);
 //web
 router.get("/getProfile", protectRoute, getProfile);
 router.put("/updateUser/:id", protectRoute, uploadAvatarMiddleware.single("avatar"), handleFileSizeError, updateUser)

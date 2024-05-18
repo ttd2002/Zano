@@ -5,14 +5,17 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { mdiArrowLeft } from '@mdi/js';
 import Icon from '@mdi/react';
 import { AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 const HeaderFriendRequest = () => {
     const navigation = useNavigation();
+    const router = useRouter();
     return (
         <View style={{height:'auto', width:'100%'}}>
             <View style={{ height: 50, width: '100%', backgroundColor: '#00abf6', alignItems: 'center', justifyContent: 'space-between', flexDirection: 'row', padding: 10 }}>
                 <TouchableOpacity style={{ width: '8%', height: 55, alignItems: 'center', justifyContent: 'center', borderRadius: 40 }}
                     onPress={() => {
-                        navigation.goBack();
+                        // navigation.goBack();
+                        router.replace('/PhoneBook')
                     }}>
                     <AntDesign name="arrowleft" size={26} color="black" />
                 </TouchableOpacity>

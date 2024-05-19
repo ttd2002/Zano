@@ -7,6 +7,10 @@ import {
   Stack,
   Typography,
   useTheme,
+  Dialog,
+  DialogContent,
+  Slide,
+  DialogTitle,
 } from "@mui/material";
 import {
   Bell,
@@ -22,35 +26,41 @@ import {
 import React from "react";
 import Shortcuts from "../../sections/setting/Shortcuts";
 import { useState } from "react";
-
+import ChangePassword from "./setting/changePassword";
 const Settings = () => {
   const theme = useTheme();
   const [openShortcuts, setOpenShortcuts] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
   const handleOpenShortcuts = () => {
     setOpenShortcuts(true);
   };
   const handleCloseShortcuts = () => {
     setOpenShortcuts(false);
   };
-
+  const handleClose = () => {
+    setOpenDialog(false);
+  };
+  const handleOpen = () => {
+    setOpenDialog(true);
+  };
   const list = [
     {
       key: 0,
       icon: <Bell size={20} />,
       title: "Notifications",
-      onclick: () => {},
+      onclick: () => { },
     },
     {
       key: 1,
       icon: <Lock size={20} />,
       title: "Privacy",
-      onclick: () => {},
+      onclick: () => { },
     },
     {
       key: 2,
       icon: <Key size={20} />,
-      title: "Security",
-      onclick: () => {},
+      title: "Change Password",
+      onclick: handleOpen,
     },
     {
       key: 3,
@@ -63,28 +73,31 @@ const Settings = () => {
       key: 4,
       icon: <Image size={20} />,
       title: "Chat Wallpaper",
-      onclick: () => {},
+      onclick: () => { },
     },
     {
       key: 5,
       icon: <Note size={20} />,
       title: "Request Account Info",
-      onclick: () => {},
+      onclick: () => { },
     },
     {
       key: 6,
       icon: <Keyboard size={20} />,
       title: "Keyboard Shortcuts",
       onclick: handleOpenShortcuts,
-      
+
     },
     {
       key: 7,
       icon: <Info size={20} />,
       title: "Help",
-      onclick: () => {},
+      onclick: () => { },
     },
   ];
+
+  const avatar = localStorage.getItem("loginavatar");
+  const name = localStorage.getItem("loginname");
   return (
     <>
       <Stack direction={"row"} sx={{ width: "100%" }}>
@@ -114,14 +127,14 @@ const Settings = () => {
             <Stack direction={"row"} spacing={3}>
               <Avatar
                 sx={{ width: 56, height: 56 }}
-                src={faker.image.avatar()}
-                alt={faker.name.fullName()}
+                src={avatar}
+                alt={name}
               />
               <Stack spacing={0.5}>
                 <Typography variant="article">
-                  {faker.name.fullName()}
+                  {name}
                 </Typography>
-                <Typography variant="body2">{faker.random.word()}</Typography>
+                {/* <Typography variant="body2">{faker.random.word()}</Typography> */}
               </Stack>
             </Stack>
             {/* Options */}
@@ -149,6 +162,7 @@ const Settings = () => {
       {openShortcuts && (
         <Shortcuts open={openShortcuts} handleClose={handleCloseShortcuts} />
       )}
+      {openDialog && <ChangePassword open={openDialog} handleClose={handleClose} />}
     </>
   );
 };

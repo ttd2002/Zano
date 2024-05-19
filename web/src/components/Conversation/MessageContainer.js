@@ -14,6 +14,7 @@ import data from "@emoji-mart/data";
 // import Footer from "./Footer";
 // import { useConversation } from "../../zustand/useConversation";
 import Message from "./Message";
+import toast from "react-hot-toast";
 
 import {
   Camera,
@@ -28,55 +29,23 @@ import {
 
 import { TextField, InputAdornment, Fab, Tooltip } from "@mui/material";
 import useConversation from "../../zustand/useConversation";
-import axios from "axios";
+import axios from "../../utils/axios";
+import { indexOf } from "lodash";
+import { useSelector, useDispatch } from 'react-redux';
+import { selectIsCreateSingleConversation, setIsCreateSingleConversation } from '../../redux/slices/createSingleCoversationSlice';
+
 const StyledInput = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-input": {
     paddingTop: "12px",
     paddingBottom: "12px",
   },
 }));
-
-const Actions = [
-  {
-    color: "#4da5fe",
-    icon: <Image size={20} />,
-    y: 102,
-    title: "Photo/Video",
-  },
-  {
-    color: "#1b8cfe",
-    icon: <Sticker size={24} />,
-    y: 157,
-    title: "Stickers",
-  },
-  {
-    color: "#0172e4",
-    icon: <Camera size={24} />,
-    y: 212,
-    title: "Image",
-  },
-  {
-    color: "#0159b2",
-    icon: <File size={24} />,
-    y: 267,
-    title: "Document",
-  },
-  {
-    color: "#013f7f",
-    icon: <User size={24} />,
-    y: 322,
-    title: "Contact",
-  },
-];
-
 const MessageContainer = () => {
   const [message, setMessage] = useState("");
   const [openPicker, setOpenPicker] = React.useState(false);
   const [value, setValue] = useState("");
   const inputRef = useRef(null);
-  // const { loading, sendMessage } = useSendMessage();
 
-  // const [inputMessage, setInputMessage] = useState("");
   const theme = useTheme();
   // const { selectedConversation, setSelectedConversation, setMessages, messages } = useConversation();
   const { selectedConversation, socket } = useConversation();
@@ -84,91 +53,110 @@ const MessageContainer = () => {
   const [messages, setMessages] = useState([]);
   const [receiver, setReceiver] = useState([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const senderId = localStorage.getItem("loginId");
+  const isCreateSingleConversation = useSelector(selectIsCreateSingleConversation);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(setIsCreateSingleConversation(false));
+  }, []); // useEffect sẽ được gọi một lần duy nhất khi component được render
 
   useEffect(() => {
-    if (selectedConversation && !selectedConversation.isGroupChat) {
-      const senderId = localStorage.getItem("loginId");
-      for (let i = 0; i < selectedConversation.participants.length; i++) {
-        if (selectedConversation.participants[i]._id != senderId) {
+    // if (selectedConversation && !selectedConversation.isGroupChat) {
+    const fetchData = async () => {
+      if (selectedConversation) {
+        if (selectedConversation.isGroupChat) {
           const NewReceiver = {
-            _id: selectedConversation.participants[i]._id,
-            name: selectedConversation.participants[i].name,
-            avatar: selectedConversation.participants[i].avatar,
+            _id: selectedConversation._id,
+            name: selectedConversation.name,
+            avatar: selectedConversation.avatar,
           };
           setReceiver(NewReceiver);
-          //  console.log("receiver",NewReceiver);
+        } else if (!selectedConversation.isGroupChat) {
+          for (let i = 0; i < selectedConversation.participants.length; i++) {
+            if (selectedConversation.participants[i]._id != senderId) {
+              const NewReceiver = {
+                _id: selectedConversation.participants[i]._id,
+                name: selectedConversation.participants[i].name,
+                avatar: selectedConversation.participants[i].avatar,
+              };
+              setReceiver(NewReceiver);
+              //  console.log("receiver",NewReceiver);
+            }
+          }
         }
       }
-      setMessages(selectedConversation.messages);
     }
+    fetchData();
   }, [selectedConversation]);
-  // if (selectedConversation && !selectedConversation.isGroupChat) {
-  //   for (let i = 0; i < selectedConversation.participants.length; i++) {
-  //     if (selectedConversation.paparticipants[i]._id == loginId) {
-  //       const Receiver = {
-  //         _id: selectedConversation.paparticipants[i]._id,
-  //         name: selectedConversation.paparticipants[i].name,
-  //         avatar: selectedConversation.paparticipants[i].avatar,
-  //       };
-  //       setReceiver(Receiver);
-  //     }
-  //   }
-  //   setMessages(selectedConversation.messages);
-  // }
-  // const socket = io(`http://localhost:8000`);
-
-  // console.log("conid",selectedConversation._id);
-  const senderId = localStorage.getItem("loginId");
-  const receiveMessageHandler = async (newMessage) => {
-    console.log("Nhận tin nhắn mới:", newMessage);
-    const updatedMessages = [...messages, newMessage]; // Tạo bản sao mới của mảng messages và thêm tin nhắn mới vào đó
-    console.log("Các tin nhắn đã cập nhật:", updatedMessages);
-    setMessages(updatedMessages); // Cập nhật messages với mảng tin nhắn mới
-    return newMessage;
-  };
 
   useEffect(() => {
+    if (selectedConversation) {
+      setMessages(selectedConversation.messages || []);
+    }
+  }, [selectedConversation]);
+
+  useEffect(() => {
+    const receiveMessageHandler = async (newMessage) => {
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+    };
+
     if (!socket) return;
     socket.on("receiveMessage", receiveMessageHandler);
 
     return () => {
       socket.off("receiveMessage", receiveMessageHandler);
     };
-  }, [socket, messages]);
+  }, [socket]);
+  const fetchMessages = async () => {
+    try {
+      if (!selectedConversation) return;
+      const response = await axios.get(`/mes/get/${selectedConversation._id}`, {
+        params: {
+          senderId: senderId,
+          conversationId: selectedConversation._id,
+        }
+      });
+      // console.log("mes", response.data);
+      setMessages(response.data);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
+  };
+  useEffect(() => {
+    fetchMessages(); // Fetch messages when selectedConversation changes
+  }, [selectedConversation]);
 
-  if (!selectedConversation) {
-    return <NoChatSelected />;
-  }
-  socket.on("connection", () => {
-    console.log("Connected to the Socket server");
-  });
-  socket.emit("joinRoom", selectedConversation._id);
+  const handleEmojiSelect = (emoji) => {
+    setMessage(message + emoji.native);
+  };
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
-
     if (!message && !selectedFile) return;
+    if (message.trim() == "") return;
     if (!selectedConversation) {
       console.log("Không có cuộc trò chuyện nào được chọn");
       return;
     }
-    console.log("Sending message:", message);
+    // console.log("Sending message:", message);
 
     try {
-
-      if (selectedFile) {
+      if (selectedFile && message.trim() == "") {
         const image = new FormData();
         image.append("imageChat", selectedFile);
-        console.log(image);
+        // console.log(image);
         const formData = new FormData();
         formData.append("imageChat", selectedFile);
 
-        const res = await axios.post("http://localhost:3000/mes/uploadImageApp", formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
+        const res = await axios.post(
+          "/mes/uploadImageApp",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
           }
-        })
+        );
 
         console.log("link ảnh", res.data.link);
         socket.emit("sendMessage", {
@@ -188,8 +176,7 @@ const MessageContainer = () => {
         ];
         setMessages(updatedMessages);
         setSelectedFile(null);
-      }
-      else {
+      } else {
         socket.emit("sendMessage", {
           senderId,
           conversationId: selectedConversation._id,
@@ -207,20 +194,35 @@ const MessageContainer = () => {
         ];
         setMessages(updatedMessages);
       }
-      console.log("ok");
+
+      // console.log("ok");
+      if (message.trim() !== "") {
+        setSelectedFile(null);
+      }
       setMessage("");
+      setShowEmojiPicker(false);
+      socket.emit("requestRender");
     } catch (error) {
       console.log(error);
-    };
-  }
-
-  const handleEmojiSelect = (emoji) => {
-    setMessage(message + emoji.native);
+    }
   };
+
+
+  if (!selectedConversation) {
+    return <NoChatSelected />;
+  }
+  socket.on("connection", () => {
+    console.log("Connected to the Socket server");
+  });
+  socket.emit("joinRoom", selectedConversation._id);
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0]; // Lấy tệp đầu tiên từ mảng files
     setSelectedFile(file); // Gán giá trị tệp đã chọn vào selectedFile
+    // Xác định đuôi của tệp được chọn
+    const fileName = file.name;
+    const fileExtension = fileName.split('.').pop().toLowerCase();
+    // console.log("File extension:", fileExtension);
   };
   function handleEmojiClick(emoji) {
     const input = inputRef.current;
@@ -239,6 +241,7 @@ const MessageContainer = () => {
       input.selectionStart = input.selectionEnd = selectionStart + 1;
     }
   }
+
   return (
     <>
       {!selectedConversation ? (
@@ -277,7 +280,7 @@ const MessageContainer = () => {
           >
             {/* Hiển thị danh sách tin nhắn */}
             {/* <MESSAGES  /> */}
-            <MESSAGES messages={messages} />
+            <MESSAGES messages={messages} selectedConversation={selectedConversation} setMessages={setMessages} />
             {/* <MessageList userId={selectedUser._id} /> */}
           </Box>
           {/* Chat footer */}
@@ -300,44 +303,70 @@ const MessageContainer = () => {
               <Stack direction={"row"} alignItems={"center"} spacing={3}>
                 <Stack sx={{ width: "100%" }}>
                   {/* Chat input */}
-                  {/*  <Box
-                    style={{
-                      zIndex: 10,
-                      position: "fixed",
-                      display: openPicker ? "inline" : "none",
-                      bottom: 81,
-                    }}
-                  >
-                    <Picker
-                      theme={theme.palette.mode}
-                      data={data}
-                      onEmojiSelect={(emoji) => {
-                        handleEmojiClick(emoji.native);
-                      }}
-                    />
-                  </Box> */}
                   <StyledInput
-                    //  inputRef={inputRef}
-                    //  value={value}
-                    // setValue={setValue}
-                    // openPicker={openPicker}
-                    // setOpenPicker={setOpenPicker}
-                    // type="text"
-                    placeholder="Send a message..."
+                    placeholder={
+                      selectedFile ? selectedFile.name : "Send a message..."
+                    }
                     value={message}
-                    // onChange={(e) => setMessage(e.target.value)}
                     onChange={(e) => {
                       if (e.target.value.length <= 5000) {
-                        // Giới hạn tin nhắn chỉ có tối đa 200 ký tự
                         setMessage(e.target.value);
                       }
                     }}
+                    InputProps={{
+                      disableUnderline: true,
+                      startAdornment: (
+                        <Stack sx={{ width: "max-content" }}>
+                          <InputAdornment>
+                            {/* Sử dụng IconButton để chọn file */}
+                            <IconButton
+                              component="label" // Sử dụng label element để làm điểm chính của IconButton
+                              htmlFor="fileInput" // Liên kết với input type file
+                              sx={{ display: "block" }}
+                            >
+                              <LinkSimple />
+                              <input
+                                id="fileInput"
+                                type="file"
+                                onChange={handleFileSelect}
+                                style={{ display: "none" }} // Ẩn input type file
+                              />
+                            </IconButton>
+                          </InputAdornment>
+                        </Stack>
+                      ),
+                      endAdornment: (
+                        <Stack sx={{ position: "relative" }}>
+                          <InputAdornment>
+                            <IconButton
+                              onClick={() =>
+                                setShowEmojiPicker(!showEmojiPicker)
+                              }
+                            >
+                              <Smiley />
+                            </IconButton>
+                            {showEmojiPicker && (
+                              <Box
+                                sx={{
+                                  position: "absolute",
+                                  bottom: 80,
+                                  right: 20,
+                                  zIndex: 999,
+                                }}
+                              >
+                                <Picker
+                                  theme={theme.palette.mode}
+                                  data={data}
+                                  onEmojiSelect={(emoji) => handleEmojiSelect(emoji)}
+                                />
+                              </Box>
+                            )}
+                          </InputAdornment>
+                        </Stack>
+                      ),
+                    }}
+                  // Nếu đã chọn file, không cho phép nhập vào input
                   />
-                  {/* Emoji Picker */}
-                  {/* File Input */}
-                  <IconButton>
-                    <input type="file" onChange={handleFileSelect}/>
-                  </IconButton>
                 </Stack>
 
                 <Box
@@ -383,161 +412,84 @@ const NoChatSelected = () => {
   );
 };
 
-// const Footer = () => {
-//   const [message, setMessage] = useState("");
-//   const { loading, sendMessage } = useSendMessage();
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     if (!message) return;
-//     await socket.emit("sendMessage", { senderId, conversationId, message, type, messages });;
-//     setMessage("");
-//   };
-//   const theme = useTheme();
-//   const [openPicker, setOpenPicker] = React.useState(false);
-//   return (
-//     <form onSubmit={handleSubmit}>
-//       <Box
-//         p={2}
-//         sx={{
-//           height: 100,
-//           width: "100%",
-//           backgroundColor:
-//             theme.palette.mode === "light"
-//               ? "#F8FAFF"
-//               : theme.palette.background.paper,
-//           boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
-//         }}
-//       >
-//         <Stack direction={"row"} alignItems={"center"} spacing={3}>
-//           <Stack sx={{ width: "100%" }}>
-//             {/* Chat input */}
-//             {/* <Box sx={{zIndex: 10, position: "fixed", bottom: 81, right: 100, }}>
-// import React, { useEffect, useState } from "react";
-// import { Box, Stack, useTheme, Typography, IconButton } from "@mui/material";
-// import { styled } from "@mui/material/styles";
-// import Header from "./Header";
-// // import Footer from "./Footer";
-// import Messages from "./Messages";
-// import { useConversation } from "../../zustand/useConversation";
-// import useGetMessages from "../../hooks/useGetMessages";
-// import Message from "./Message";
-// import io from "socket.io-client";
-//           <Picker theme={theme.palette.mode}  data={data} onEmojiSelect={console.log}/>
-//           </Box> */}
-//             {/* Emoji BOX */}
-//             {/* <Box
-//               sx={{
-//                 display: openPicker ? "inline" : "none",
-//                 zIndex: 10,
-//                 position: "fixed",
-//                 bottom: 70,
-//                 right: 90,
-//               }}
-//             >
-//               <EmojiPicker height={"400px"} width={"330px"} />
-//             </Box> */}
-
-//             {/* <ChatInput
-//           onChange={(e) => setMessage(e.target.value)}
-//            setOpenPicker={setOpenPicker} /> */}
-
-//             <StyledInput
-//               type="text"
-//               placeholder="Send a message..."
-//               onChange={(e) => setMessage(e.target.value)}
-//             />
-
-//             {/* <input type="text" placeholder="Send a message..."
-//            onChange={(e) => setMessage(e.target.value)}
-//            /> */}
-//           </Stack>
-
-//           <Box
-//             sx={{
-//               height: 48,
-//               width: 48,
-//               backgroundColor: theme.palette.primary.main,
-//               borderRadius: 1.5,
-//             }}
-//           >
-//             <Stack
-//               sx={{ height: "100%", width: "100%" }}
-//               alignItems={"center"}
-//               justifyContent={"center"}
-//             >
-//               {/* Submit send message */}
-//               <IconButton type="submit">
-//                 <PaperPlaneTilt color="#fff" />
-//               </IconButton>
-//             </Stack>
-//           </Box>
-//         </Stack>
-//       </Box>
-//     </form>
-//   );
-// };
-
-const MESSAGES = ({ messages }) => {
+const MESSAGES = ({ messages, selectedConversation, setMessages }) => {
   const timenow = new Intl.DateTimeFormat("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   }).format(Date.now());
-  // const { messages, loading } = useGetMessages();
-  // messages = mess;
-  // const { setMessages, messages } = useConversation();
+
   const messageEndRef = useRef(null);
+
+  const theme = useTheme();
+
   useEffect(() => {
-    // Sau mỗi lần render, cuộn xuống phần tử cuối cùng trong danh sách tin nhắn
     if (messageEndRef.current) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
-  const theme = useTheme();
-  // console.log(Array.isArray(messages));
-  //console.log("Current messages in MESSAGES component:", messages);
+  useEffect(() => {
+    // Kiểm tra xem có tin nhắn nào bị recall không
+    const isAnyRecalled = messages.some(message => message.recall);
+    setIsRecalled(isAnyRecalled);
+  }, [messages]);
+
+  const [isRecalled, setIsRecalled] = useState(false);
+  const { socket } = useConversation();
+  const handleRecallMessage = async (messageId) => {
+    const confirmRecall = window.confirm("Are you sure to want to recall this message?");
+    if (confirmRecall) {
+      try {
+        const response = await axios.post("/mes/recallMessage", {
+          conversationId: selectedConversation._id,
+          messageId: messageId,
+        });
+        // Nếu recall message thành công, cập nhật lại mảng messages
+        if (response.status === 200) {
+          const recalledMessages = messages.map(message => {
+            if (message._id === messageId) {
+              return {
+                ...message,
+                message: "This message has been recalled",
+                type: "text"
+              };
+            }
+            // socket.emit("requestRender");
+            return message;
+          });
+          setMessages(recalledMessages);
+          setIsRecalled(true);
+          toast.success("Recall message successfully");
+        } else {
+          toast.error("Failed to recall message");
+        }
+      } catch (error) {
+        console.error("Error recalling message:", error);
+        toast.error("Failed to recall message");
+      }
+    }
+  };
+
+
   return (
     <Stack
       sx={{
-        overflowY: "scroll", // Kích hoạt thanh trượt khi nội dung vượt quá chiều cao
+        overflowY: "scroll",
         "&::-webkit-scrollbar": {
-          width: "8px", // Chiều rộng của thanh trượt
+          width: "8px",
         },
         "&::-webkit-scrollbar-track": {
-          background: theme.palette.background.default, // Màu nền của thanh trượt
+          background: theme.palette.background.default,
         },
         "&::-webkit-scrollbar-thumb": {
-          background: theme.palette.primary.main, // Màu của nút trượt
-          borderRadius: "4px", // Độ cong của nút trượt
+          background: theme.palette.primary.main,
+          borderRadius: "4px",
         },
       }}
     >
-      {/* {
-        !loading && Array.isArray(messages) && messages.length > 0 ? (
-          messages.map((conversation) =>
-            conversation.messages.map((message) => (
-              <Message key={message.id} message={message} />
-            ))
-          )
-        ) : loading ? (
-          // Placeholder khi đang tải
-          [...Array(3)].map((_, idx) => <MessageSkeleton key={idx} />)) : (
-          // Placeholder khi không có tin nhắn
-          <Typography align="center" fontSize={20} variant="body1">
-            Send a message to start the conversation!
-          </Typography>
-        )
-      } */}
-      {/* {Array.isArray(messages) &&
-        messages &&
-        messages.map((message) => (
-          <Message key={message._id} message={message} />
-        ))}
-         */}
       {Array.isArray(messages) &&
         messages.map((message, index, array) => (
-          <React.Fragment key={message._id}>
-            <Message message={message} />
+          <React.Fragment key={message._id || index}>
+            <Message key={message._id} message={message} onRecallMessage={handleRecallMessage} setIsRecalled={setIsRecalled} />
             {index === array.length - 1 && (
               <Stack
                 sx={{ mb: 2, mt: 2 }}
@@ -554,427 +506,12 @@ const MESSAGES = ({ messages }) => {
                 </Typography>
                 <Divider width="46%" />
               </Stack>
-            )}{" "}
-            {/* Thêm Divider sau tin nhắn cuối cùng */}
+            )}
           </React.Fragment>
         ))}
       <div ref={messageEndRef}></div>
-      {/* {messages.map((message) => (
-        <Message key={message._id} message={message} />
-      ))} */}
     </Stack>
   );
 };
+
 export default MessageContainer;
-// import {
-//   Camera,
-//   File,
-//   Image,
-//   LinkSimple,
-//   PaperPlaneTilt,
-//   Smiley,
-//   Sticker,
-//   User,
-// } from "phosphor-react";
-
-// import { TextField, InputAdornment, Fab, Tooltip } from "@mui/material";
-
-// import useSendMessage from "../../hooks/useSendMessage";
-// const StyledInput = styled(TextField)(({ theme }) => ({
-//   "& .MuiInputBase-input": {
-//     paddingTop: "12px",
-//     paddingBottom: "12px",
-//   },
-// }));
-
-// const Actions = [
-//   {
-//     color: "#4da5fe",
-//     icon: <Image size={20} />,
-//     y: 102,
-//     title: "Photo/Video",
-//   },
-//   {
-//     color: "#1b8cfe",
-//     icon: <Sticker size={24} />,
-//     y: 157,
-//     title: "Stickers",
-//   },
-//   {
-//     color: "#0172e4",
-//     icon: <Camera size={24} />,
-//     y: 212,
-//     title: "Image",
-//   },
-//   {
-//     color: "#0159b2",
-//     icon: <File size={24} />,
-//     y: 267,
-//     title: "Document",
-//   },
-//   {
-//     color: "#013f7f",
-//     icon: <User size={24} />,
-//     y: 322,
-//     title: "Contact",
-//   },
-// ];
-
-// const MessageContainer = () => {
-//   const [message, setMessage] = useState("");
-//   const { loading, sendMessage } = useSendMessage();
-//   const { GetMSGS, GetMSGLoading } = useGetMessages();
-//   const [inputMessage, setInputMessage] = useState("");
-//   const theme = useTheme();
-//   const [openPicker, setOpenPicker] = React.useState(false);
-//   const { selectedConversation, setSelectedConversation , setMessages, messages} = useConversation();
-//   // useEffect(() => {
-//   //   setMessage(inputMessage); // Cập nhật message từ biến trung gian
-//   // }, [inputMessage]);
-//   const socket = io(`http://localhost:8000`);
-
-//   // console.log("conid",selectedConversation._id);
-//   const senderId = localStorage.getItem("loginId");
-//   // const message = selectedConversation.messages
-//   useEffect(() => {
-//     const receiveMessageHandler = (newMessage) => {
-//       console.log("new mes:",newMessage)
-//       //console.log("oks",senderId)
-
-//       // Kiểm tra nếu tin nhắn được nhận từ socket không phải là tin nhắn do chính client gửi
-//       if (newMessage.senderId !== senderId) {
-
-//         setMessages(prevMessages => [...prevMessages, newMessage]);
-//         console.log("List messages:");
-//         console.table(messages);
-//         // Chỉ thêm tin nhắn mới vào state nếu không phải là tin nhắn do chính client gửi
-//       }
-
-//     };
-
-//     socket.on("receiveMessage", receiveMessageHandler);
-
-//     // Xóa bỏ listener khi component unmount
-//     return () => {
-//       socket.off("receiveMessage", receiveMessageHandler);
-//     };
-//   }, [socket, messages]);
-
-//   if (!selectedConversation) {
-//     return <NoChatSelected />;
-//   }
-//   socket.on("connection", () => {
-//     console.log("Connected to the Socket server")
-//   })
-//   socket.emit("joinRoom", selectedConversation._id)
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     if (!message) return;
-//     console.log(message);
-//     await socket.emit("sendMessage", { senderId, conversationId: selectedConversation._id, message, type: "text" });
-//     setMessage("");
-//     console.log(message);
-//     console.table(messages);
-//   };
-
-//   return (
-
-//     <>
-//       {!selectedConversation ? (<NoChatSelected />) : (
-
-//         <Stack height={"100%"} maxHeight={"100vh"} width={"auto"}>
-//           {/* Chat header */}
-//           <Header/>
-//           {/* MSG */}
-//       <Box
-//         width={"100%"}
-//         sx={{
-//           flexGrow: 1,
-//           height: "100%",
-//           overflowY: "scroll",
-//           "&::-webkit-scrollbar": {
-//             width: "8px",
-//           },
-//           "&:-webkit-scrollbar-track": {
-//             background: "#f1f1f1",
-//           },
-//           "&:-webkit-scrollbar-thumb": {
-//             background: "#888",
-//           },
-//           "&:-webkit-scrollbar-thumb:hover": {
-//             background: "#555",
-//           },
-//           "&.is-scrolling": {
-//             "&::-webkit-scrollbar-thumb": {
-//               background: theme.palette.primary.main,
-//               borderRadius: 10,
-//             },
-//           },
-//         }}
-//       >
-//         {/* Hiển thị danh sách tin nhắn */}
-//         <Stack sx={{
-//   overflowY: "scroll", // Kích hoạt thanh trượt khi nội dung vượt quá chiều cao
-//   "&::-webkit-scrollbar": {
-//     width: "8px", // Chiều rộng của thanh trượt
-//   },
-//   "&::-webkit-scrollbar-track": {
-//     background: theme.palette.background.default, // Màu nền của thanh trượt
-//   },
-//   "&::-webkit-scrollbar-thumb": {
-//     background: theme.palette.primary.main, // Màu của nút trượt
-//     borderRadius: "4px", // Độ cong của nút trượt
-//   },
-// }}
-// >
-//   {/* {
-//     !loading && Array.isArray(messages) && messages.length > 0 ? (
-//       messages.map((conversation) =>
-//         conversation.messages.map((message) => (
-//           <Message key={message.id} message={message} />
-//         ))
-//       )
-//     ) : loading ? (
-//       // Placeholder khi đang tải
-//       [...Array(3)].map((_, idx) => <MessageSkeleton key={idx} />)
-//     ) : (
-//       // Placeholder khi không có tin nhắn
-//       <Typography align="center" fontSize={20} variant="body1">
-//         Send a message to start the conversation!
-//       </Typography>
-//     )
-//   } */}
-//   {!GetMSGLoading && Array.isArray(GetMSGS) && GetMSGS.length > 0 && (
-//     GetMSGS.map((message) => (
-//       <Message key={message._id} message={message} />
-//     ))
-//   )}
-
-// </Stack>
-
-//         {/* <MessageList userId={selectedUser._id} /> */}
-
-//       </Box>
-//           {/* Chat footer */}
-//           {/* <Footer /> */}
-//           <form onSubmit={handleSubmit}>
-//             <Box
-//               p={2}
-//               sx={{
-//                 height: 100,
-//                 width: "100%",
-//                 backgroundColor:
-//                   theme.palette.mode === "light"
-//                     ? "#F8FAFF"
-//                     : theme.palette.background.paper,
-//                 boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
-//               }}
-//             >
-//               <Stack direction={"row"} alignItems={"center"} spacing={3}>
-//                 <Stack sx={{ width: "100%" }}>
-//                   {/* Chat input */}
-//                   {/* <Box sx={{zIndex: 10, position: "fixed", bottom: 81, right: 100, }}>
-//           <Picker theme={theme.palette.mode}  data={data} onEmojiSelect={console.log}/>
-//           </Box> */}
-//                   {/* Emoji BOX */}
-//                   {/* <Box
-//               sx={{
-//                 display: openPicker ? "inline" : "none",
-//                 zIndex: 10,
-//                 position: "fixed",
-//                 bottom: 70,
-//                 right: 90,
-//               }}
-//             >
-//               <EmojiPicker height={"400px"} width={"330px"} />
-//             </Box> */}
-
-//                   {/* <ChatInput
-//           onChange={(e) => setMessage(e.target.value)}
-//            setOpenPicker={setOpenPicker} /> */}
-
-//                   <StyledInput
-//                   value={message}
-//                     type="text"
-//                     placeholder="Send a message..."
-//                     onChange={(e) => setMessage(e.target.value)}
-//                   />
-
-//                   {/* <input type="text" placeholder="Send a message..."
-//            onChange={(e) => setMessage(e.target.value)}
-//            /> */}
-//                 </Stack>
-
-//                 <Box
-//                   sx={{
-//                     height: 48,
-//                     width: 48,
-//                     backgroundColor: theme.palette.primary.main,
-//                     borderRadius: 1.5,
-//                   }}
-//                 >
-//                   <Stack
-//                     sx={{ height: "100%", width: "100%" }}
-//                     alignItems={"center"}
-//                     justifyContent={"center"}
-//                   >
-//                     {/* Submit send message */}
-//                     <IconButton type="submit">
-//                       <PaperPlaneTilt color="#fff" />
-//                     </IconButton>
-//                   </Stack>
-//                 </Box>
-//               </Stack>
-//             </Box>
-//           </form>
-//         </Stack>
-//       )}
-//     </>
-//   );
-// };
-
-// const NoChatSelected = () => {
-//   return (
-//     <>
-//       <Stack direction={"Column"} sx={{ width: "100%" }}>
-//         <Typography fontSize={60} variant="subtitle1" align="center" mt={2}>Welcome to Zano</Typography>
-//         <Typography fontSize={30} variant="body1" align="center" mt={2}>Select a chat to start messaging!</Typography>
-//       </Stack>
-//     </>
-//   );
-// };
-
-// // const Footer = () => {
-// //   const [message, setMessage] = useState("");
-// //   const { loading, sendMessage } = useSendMessage();
-
-// //   const handleSubmit = async (e) => {
-// //     e.preventDefault();
-// //     if (!message) return;
-// //     await socket.emit("sendMessage", { senderId, conversationId, message, type, messages });;
-// //     setMessage("");
-// //   };
-// //   const theme = useTheme();
-// //   const [openPicker, setOpenPicker] = React.useState(false);
-// //   return (
-// //     <form onSubmit={handleSubmit}>
-// //       <Box
-// //         p={2}
-// //         sx={{
-// //           height: 100,
-// //           width: "100%",
-// //           backgroundColor:
-// //             theme.palette.mode === "light"
-// //               ? "#F8FAFF"
-// //               : theme.palette.background.paper,
-// //           boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
-// //         }}
-// //       >
-// //         <Stack direction={"row"} alignItems={"center"} spacing={3}>
-// //           <Stack sx={{ width: "100%" }}>
-// //             {/* Chat input */}
-// //             {/* <Box sx={{zIndex: 10, position: "fixed", bottom: 81, right: 100, }}>
-// //           <Picker theme={theme.palette.mode}  data={data} onEmojiSelect={console.log}/>
-// //           </Box> */}
-// //             {/* Emoji BOX */}
-// //             {/* <Box
-// //               sx={{
-// //                 display: openPicker ? "inline" : "none",
-// //                 zIndex: 10,
-// //                 position: "fixed",
-// //                 bottom: 70,
-// //                 right: 90,
-// //               }}
-// //             >
-// //               <EmojiPicker height={"400px"} width={"330px"} />
-// //             </Box> */}
-
-// //             {/* <ChatInput
-// //           onChange={(e) => setMessage(e.target.value)}
-// //            setOpenPicker={setOpenPicker} /> */}
-
-// //             <StyledInput
-// //               type="text"
-// //               placeholder="Send a message..."
-// //               onChange={(e) => setMessage(e.target.value)}
-// //             />
-
-// //             {/* <input type="text" placeholder="Send a message..."
-// //            onChange={(e) => setMessage(e.target.value)}
-// //            /> */}
-// //           </Stack>
-
-// //           <Box
-// //             sx={{
-// //               height: 48,
-// //               width: 48,
-// //               backgroundColor: theme.palette.primary.main,
-// //               borderRadius: 1.5,
-// //             }}
-// //           >
-// //             <Stack
-// //               sx={{ height: "100%", width: "100%" }}
-// //               alignItems={"center"}
-// //               justifyContent={"center"}
-// //             >
-// //               {/* Submit send message */}
-// //               <IconButton type="submit">
-// //                 <PaperPlaneTilt color="#fff" />
-// //               </IconButton>
-// //             </Stack>
-// //           </Box>
-// //         </Stack>
-// //       </Box>
-// //     </form>
-// //   );
-// // };
-
-// const MESSAGES = () => {
-//   const { GetMSGS, GetMSGLoading, receiverId } = useGetMessages();
-//   const theme = useTheme();
-//   // console.log(Array.isArray(messages));
-//   return (
-
-//     <Stack sx={{
-//       overflowY: "scroll", // Kích hoạt thanh trượt khi nội dung vượt quá chiều cao
-//       "&::-webkit-scrollbar": {
-//         width: "8px", // Chiều rộng của thanh trượt
-//       },
-//       "&::-webkit-scrollbar-track": {
-//         background: theme.palette.background.default, // Màu nền của thanh trượt
-//       },
-//       "&::-webkit-scrollbar-thumb": {
-//         background: theme.palette.primary.main, // Màu của nút trượt
-//         borderRadius: "4px", // Độ cong của nút trượt
-//       },
-//     }}
-//     >
-//       {/* {
-//         !loading && Array.isArray(messages) && messages.length > 0 ? (
-//           messages.map((conversation) =>
-//             conversation.messages.map((message) => (
-//               <Message key={message.id} message={message} />
-//             ))
-//           )
-//         ) : loading ? (
-//           // Placeholder khi đang tải
-//           [...Array(3)].map((_, idx) => <MessageSkeleton key={idx} />)
-//         ) : (
-//           // Placeholder khi không có tin nhắn
-//           <Typography align="center" fontSize={20} variant="body1">
-//             Send a message to start the conversation!
-//           </Typography>
-//         )
-//       } */}
-//       {!GetMSGLoading && Array.isArray(GetMSGS) && GetMSGS.length > 0 && (
-//         GetMSGS.map((message) => (
-//           <Message key={message._id} message={message} />
-//         ))
-//       )}
-
-//     </Stack>
-//   );
-// };
-// export default MessageContainer
-//   ;

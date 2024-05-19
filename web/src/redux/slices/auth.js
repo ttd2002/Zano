@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "../../utils/axios";
 import { showSnackbar } from "./app";
 import { useNavigate } from "react-router-dom";
-
+import { useState } from "react";
 const initialState = {
   isLoggedIn: false,
   token: "",
@@ -40,8 +40,8 @@ export function LoginUser(formValues) {
           },
         }
       );
-     // console.log(response.data);
-      localStorage.setItem("UserProfile",JSON.stringify(response.data));
+      // console.log(response.data);
+      localStorage.setItem("UserProfile", JSON.stringify(response.data));
       localStorage.setItem("logintoken", response.data.token);
       localStorage.setItem("loginId", response.data._id);
       localStorage.setItem("loginname", response.data.name);
@@ -66,7 +66,7 @@ export function LoginUser(formValues) {
     } catch (error) {
       console.log(error);
       // Hiển thị snack bar với thông báo lỗi
-      dispatch(showSnackbar({ severity: "error", message: error.message }));
+      dispatch(showSnackbar({ severity: "error", message: "Incorrect phone or password" }));
     }
   };
 }
@@ -81,6 +81,12 @@ export function LogoutUser() {
     localStorage.removeItem("logingender");
     localStorage.removeItem("loginbirthDate");
     localStorage.removeItem("loginavatar");
+    localStorage.removeItem("UserProfile");
+    localStorage.removeItem("chat-user");
+    localStorage.removeItem("persist:conversation");
+    localStorage.removeItem("redux-root");
+    localStorage.removeItem("SigupUser");
+
   };
 }
 

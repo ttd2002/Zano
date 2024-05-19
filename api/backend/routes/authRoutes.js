@@ -2,11 +2,13 @@ const express = require("express");
 const router = express.Router();
 require("dotenv").config();
 const { register, login, login2,changePassword, changePasswordByPhone, checkPhoneExistApp} = require("../controllers/authController");
-
-router.post("/register", register);
+const { uploadAvatarMiddleware } = require("../middlewares/uploadAvatar.js");
+const { handleFileSizeError } = require("../middlewares/uploadImages.js");
+// router.post("/register", register);
 router.post("/login", login);
 router.post("/login2", login2);
 router.post("/changePassword", changePassword);
 router.post("/changePasswordByPhone", changePasswordByPhone);
 router.post("/checkPhoneExistApp", checkPhoneExistApp);
+router.post("/register", uploadAvatarMiddleware.single("avatar"), handleFileSizeError, register);
 module.exports = router;

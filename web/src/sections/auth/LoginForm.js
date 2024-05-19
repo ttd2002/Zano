@@ -1,4 +1,4 @@
-import React, { useState, useEffect  } from "react";
+import React, { useState, useEffect } from "react";
 import * as Yup from "yup";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -16,18 +16,21 @@ import RHFTextField from "../../components/hook-form/RHFTextField";
 import { Eye, EyeSlash } from "phosphor-react";
 import { LoginUser } from "../../redux/slices/auth";
 import { useDispatch } from "react-redux";
+import { useLocation } from "react-router-dom";
 
 const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
+  const location = useLocation();
+  const { phone, password } = location.state || {};
   const LoginSchema = Yup.object().shape({
     phone: Yup.string()
-    .required("Phone number is required")
-    .matches(/^\d{6,}$/, "Phone number must be 6 or more digits"),
+      .required("Phone number is required")
+      .matches(/^\d{6,}$/, "Phone number must be 6 or more digits"),
     password: Yup.string().required("Password is required"),
   });
-  
-  
+
+
   const defaultValues = {
     phone: "",
     password: "",
@@ -61,14 +64,14 @@ const LoginForm = () => {
     handleSubmit,
     formState: { errors, isSubmitting, isSubmitSuccessful },
   } = methods;
-  
+
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("SigupUser"));
-    if (storedUser) {
-      setValue("phone", storedUser.phone);
-      setValue("password", storedUser.password);
+    // Đặt giá trị phone và password nếu tồn tại
+    if (phone && password) {
+      setValue("phone", phone);
+      setValue("password", password);
     }
-  }, [setValue]);
+  }, [phone, password, setValue]);
   return (
     <FormProvider methods={methods} onSubmit={handleSubmit(onSubmit)}>
       <Stack spacing={3}>
@@ -76,7 +79,7 @@ const LoginForm = () => {
           <Alert severity="error">{errors.afterSubmit.message}</Alert>
         )}
 
-        <RHFTextField name="phone" label="Phone number" 
+        <RHFTextField name="phone" label="Phone number"
         />
 
         <RHFTextField

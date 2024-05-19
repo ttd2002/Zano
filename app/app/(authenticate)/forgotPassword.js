@@ -52,7 +52,7 @@ const ForgotPassword = () => {
             // Xử lý kết quả từ server
             if (response.data.exists) {
                 // Alert.alert("User exists");
-                // sendVerification()
+                sendVerification()
                 router.navigate({
                     pathname: '/(authenticate)/changePassword',
                     params: {

@@ -7,25 +7,39 @@ import {
   IconButton,
   Divider,
 } from "@mui/material";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "@mui/material/styles";
-import { CaretDown, MagnifyingGlass, Phone, VideoCamera } from "phosphor-react";
+import { CaretDown, MagnifyingGlass, Phone, Users, VideoCamera } from "phosphor-react";
 import StyledBadge from "../StyledBadge";
 import { ToggleSidebar } from "../../redux/slices/app";
 import { useDispatch } from "react-redux";
 import useConversation from "../../zustand/useConversation";
 import { setSelectedConversation } from "../../redux/slices/conversationSlice";
+import Members from "../../sections/main/Members";
 //import {Conversation} from "../Conversation/Conversations/Conversation.js""
 
 const Header = (receiver) => {
   const { selectedConversation, setSelectedConversation } = useConversation();
-  //console.log(receiver)
-  // const {onlineUsers} = useSocketContext();
-  // const isOnline = onlineUsers.includes(conversation._id)
+ // console.log("Selected:",selectedConversation);
+  const [isGroupChat, setIsGroupChat] = useState(false);
+  useEffect(() => {
+    if (selectedConversation) {
+      // Kiểm tra nếu selectedConversation là group chat
+      setIsGroupChat(selectedConversation.isGroupChat === true);
+    }
+  }, [selectedConversation]);
+  const handleCloseGroupDialog = () => {
+    setOpenGroupDialog(false);
+  };
+  const handleOpenGroupDialog = () => {
+    setOpenGroupDialog(true);
+  };
+  const [openGroupDialog, setOpenGroupDialog] = useState(false);
   const theme = useTheme();
   const dispatch = useDispatch();
   
   return (
+    <>
     <Box
       p={2}
       sx={{
@@ -77,6 +91,12 @@ const Header = (receiver) => {
         </Stack>
 
         <Stack direction={"row"} alignItems={"center"} spacing={3}>
+
+        {isGroupChat && ( // Hiển thị IconButton Users nếu là group chat
+              <IconButton onClick={handleOpenGroupDialog}>
+                <Users />
+              </IconButton>
+            )}
           <IconButton>
             <VideoCamera />
           </IconButton>
@@ -95,6 +115,13 @@ const Header = (receiver) => {
         </Stack>
       </Stack>
     </Box>
+     {openGroupDialog && (
+      <Members
+        open={openGroupDialog}
+        handleClose={handleCloseGroupDialog}
+      />
+    )}
+    </>
   );
 };
 

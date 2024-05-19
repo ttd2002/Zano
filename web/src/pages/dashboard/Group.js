@@ -24,7 +24,7 @@ import { scrollElements, showScrollbars } from "../../components/Scrollbar";
 
 import StyledBadge from "../../components/StyledBadge";
 import useGetConversations from "../../hooks/useGetConversations";
-import axios from "axios";
+import axios from "../../utils/axios";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from "react-hook-form";
 import * as Yup from "yup";
@@ -64,7 +64,7 @@ const Group = () => {
   const fetchGroupList = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:3000/group/getGroupMessaged",
+        "/group/getGroupMessaged",
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("logintoken")}`,

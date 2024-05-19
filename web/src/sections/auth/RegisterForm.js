@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import * as Yup from "yup";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -15,14 +15,15 @@ import {
 import RHFTextField from "../../components/hook-form/RHFTextField";
 import { Eye, EyeSlash } from "phosphor-react";
 import RHFText from "../../components/hook-form/RHFText";
-// import { RHFUploadAvatar } from "../../components/hook-form/RHFUpload";
+import { RHFUploadAvatar } from "../../components/hook-form/RHFUpload";
 import useSignup from "../../hooks/useSignup";
-// import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 const RegisterForm = () => {
-  
   const [showPassword, setShowPassword] = useState(false);
+  const [file, setFile] = useState();
+  const [avatarFile, setAvatarFile] = useState(null);
+
   const [inputs, setInputs] = useState({
     name: "",
     phone: "",
@@ -30,7 +31,7 @@ const RegisterForm = () => {
     confirmPassword: "",
     gender: "",
     birthDate: "",
-    avatar: "",
+    avatar: null,
   });
 
   const RegisterSchema = Yup.object().shape({
@@ -49,74 +50,74 @@ const RegisterForm = () => {
     name: "",
     phone: "",
     password: "",
-    confirmpassword: "",
+    confirmPassword: "",
     gender: "",
     birthDate: "",
     avatar: "",
   };
+
   const methods = useForm({
     resolver: yupResolver(RegisterSchema),
     defaultValues,
   });
 
-  // const formatDateToString = (date) => {
-  //   const d = new Date(date);
-  //   const year = d.getFullYear();
-  //   const month = d.getMonth() + 1 < 10 ? `0${d.getMonth() + 1}` : d.getMonth() + 1;
-  //   const day = d.getDate() < 10 ? `0${d.getDate()}` : d.getDate();
-  //   return `${month}/${day}/${year}`;
-  // };
   const navigate = useNavigate();
-  
 
-  const onSubmit = async (data) => {
-    try {
-      //submit data backend
-    } catch (error) {
-      console.log(error);
-      reset();
-      setError("afterSubmit", {
-        ...error,
-        message: error.message,
+  const {setValue, reset, setError, formState: { errors } } = methods;
+  const handleDrop = useCallback(
+    (acceptedFiles) => {
+      const file = acceptedFiles[0];
+      setFile(file);
+
+      const newFile = Object.assign(file, {
+        preview: URL.createObjectURL(file),
       });
-    }
-  };
+      setAvatarFile(file);
+      if (file) {
+        setInputs((prevInputs) => ({ ...prevInputs, avatar: file }));
+        setValue("avatar", newFile, { shouldValidate: true });
+      }
+    },
+    [setValue]
+  );
 
-  const {
-    reset,
-    setError,
-    formState: { errors, isSubmitting, isSubmitSuccessful },
-  } = methods;
 
-  const { loading, signup } = useSignup(navigate);
+  const { signup } = useSignup(navigate);
+  const formData = new FormData();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await signup(inputs);
+    formData.append("name", inputs.name);
+    formData.append("phone", inputs.phone);
+    formData.append("password", inputs.password);
+    formData.append("confirmPassword", inputs.confirmPassword);
+    formData.append("gender", inputs.gender);
+    formData.append("birthDate", inputs.birthDate);
+    formData.append("avatar", file);
+    // const formDataObject = Object.fromEntries(formData);
+    // console.log("form data", formDataObject);
+    // console.log("avatarPreview", avatarPreview);
+    await signup({ formData });
   };
 
-  
   return (
     <FormProvider methods={methods} onSubmit={handleSubmit}>
       <Stack spacing={3}>
         {!!errors.afterSubmit && (
           <Alert severity="error">{errors.afterSubmit.message}</Alert>
         )}
-        {/* name */}
         <RHFTextField
           name="name"
           label="Name"
           value={inputs.name}
           onChange={(e) => setInputs({ ...inputs, name: e.target.value })}
         />
-        {/* phone */}
         <RHFTextField
           name="phone"
           label="Phone number"
           value={inputs.phone}
           onChange={(e) => setInputs({ ...inputs, phone: e.target.value })}
         />
-        {/* password */}
         <RHFTextField
           value={inputs.password}
           onChange={(e) => setInputs({ ...inputs, password: e.target.value })}
@@ -137,7 +138,6 @@ const RegisterForm = () => {
             ),
           }}
         />
-        {/* confirm password */}
         <RHFTextField
           value={inputs.confirmPassword}
           onChange={(e) =>
@@ -161,29 +161,23 @@ const RegisterForm = () => {
           }}
         />
         <Typography variant="subtitle1">Gender:</Typography>
-        {/* Gender */}
         <GenderCheckbox
           value={inputs.gender}
           onChange={(e) => setInputs({ ...inputs, gender: e.target.value })}
         />
-
         <Typography variant="subtitle1">Birthday</Typography>
-        {/* birthday */}
         <RHFText
           value={inputs.birthDate}
           onChange={(e) => setInputs({ ...inputs, birthDate: e.target.value })}
           name="birthDate"
           type="date"
         />
-
-        {/* <Typography variant="subtitle1">Avatar</Typography> */}
-
-        {/* <RHFUploadAvatar
-          value={inputs.avatar}
-          onChange={(avatar) => setInputs({ ...inputs, avatar })} // Sử dụng setInputs để cập nhật giá trị avatar
+        <Typography variant="subtitle1">Avatar</Typography>
+        <RHFUploadAvatar
+          value={avatarFile}
+          onDrop={handleDrop}
           name="avatar"
-        /> */}
-
+        />
         <Button
           fullWidth
           color="inherit"

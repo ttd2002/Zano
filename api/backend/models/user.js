@@ -30,12 +30,6 @@ const userSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
-  messaged: [                       //để tạm thời, sau sẽ chuyển sang conversation
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-  ],
   listFriend: [
     {
       type: mongoose.Schema.Types.ObjectId,

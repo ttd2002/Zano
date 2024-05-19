@@ -31,10 +31,6 @@ const Nav_Buttons = [
   },
   {
     index: 1,
-    icon: <Users />,
-  },
-  {
-    index: 2,
     icon: <Phone />,
   },
 ];
@@ -270,7 +266,7 @@ const Message_options = [
     title: "Star message",
   },
   {
-    title: "Report",
+    title: "Recall Message",
   },
   {
     title: "Delete Message",

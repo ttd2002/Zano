@@ -9,97 +9,56 @@ import RHFTextField from "../../components/hook-form/RHFTextField";
 import RHFText from "../../components/hook-form/RHFText";
 import { useDispatch, useSelector } from "react-redux";
 import { RHFUploadAvatar } from "../../components/hook-form/RHFUpload";
-import GenderCheckbox from "../auth/GenderCheckBox";
-import { FetchUserProfile } from "../../redux/slices/app";
+// import GenderCheckbox from "../auth/GenderCheckBox";
 import {
   FormControl,
   FormControlLabel,
   Radio,
   RadioGroup,
 } from "@mui/material";
-import upDateUser from "../../hooks/upDateUser";
 import updateUserProfile from "../../hooks/upDateUser";
+import { fetchUserProfile } from "../../redux/slices/userSlice";
 const ProfileForm = () => {
   const dispatch = useDispatch();
   const [file, setFile] = useState();
   const [defaultGender, setDefaultGender] = useState();
   const [genderValue, setGenderValue] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const ProfileSchema = Yup.object().shape({
     name: Yup.string().required("Name is required"),
     gender: Yup.string().oneOf(["male", "female"]).required("male or female"),
     birthDate: Yup.string().required("Name is required"),
     avatar: Yup.mixed().nullable(true).required("Avatar file is required"),
   });
-
-  const avatar = localStorage.getItem("loginavatar");
-
-  const name = localStorage.getItem("loginname");
-
-  const birthDate = localStorage.getItem("loginbirthDate");
-
-  useEffect(() => {
-    const gender = localStorage.getItem("logingender");
-    setDefaultGender(gender);
-    setGenderValue(gender);
-  }, []);
-
-  const defaultValues = {
-    avatar: avatar,
-    name: name,
-    gender: defaultGender,
-    birthDate: birthDate,
-  };
   const methods = useForm({
     resolver: yupResolver(ProfileSchema),
-    defaultValues,
+    defaultValues: {
+      avatar: "",
+      name: "",
+      gender: "",
+      birthDate: "",
+    },
   });
+  const { setValue, handleSubmit } = methods;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await dispatch(fetchUserProfile());
+        setValue("avatar", data.payload.avatar);
+        setValue("name", data.payload.name);
+        setValue("gender", data.payload.gender);
+        setGenderValue(data.payload.gender);
+        setValue("birthDate", data.payload.birthDate);
+        console.log("user data:", data.payload);
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      }
+    };
 
-  const {
-    reset,
-    watch,
-    control,
-    setValue,
-    handleSubmit,
-    formState: { isSubmitting, isSubmitSuccessful },
-  } = methods;
-  const values = watch();
-
-  // const onSubmit = async (data) => {
-  //   // try {
-  //   //   //   Send API request
-  //   //   console.log("DATA", data);
-  //   //   dispatch(
-  //   //     UpdateUserProfile({
-  //   //       firstName: data?.firstName,
-  //   //       about: data?.about,
-  //   //       avatar: file,
-  //   //     })
-  //   //   );
-  //   // } catch (error) {
-  //   //   console.error(error);
-  //   // }
-  // };
-  // const onSubmit = async (e) => {
-  //   e.preventDefault();
-  //   const data = methods.getValues();
-  //   // Gọi hàm updateUserProfile với thông tin người dùng được nhập
-  //   upDateUser(data);
-  // };
-  
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    
-    const data = methods.getValues();
-    console.log(data) 
-    try {
-      await updateUserProfile(data); // Gọi hàm updateUser với dữ liệu từ form
-      // Thực hiện các hành động sau khi update user thành công
-    } catch (error) {
-      // Xử lý lỗi nếu có
-    }
-  };
-
-
+    fetchData();
+  }, [dispatch, setValue]);
+  const formData = new FormData();
   const handleDrop = useCallback(
     (acceptedFiles) => {
       const file = acceptedFiles[0];
@@ -112,59 +71,107 @@ const ProfileForm = () => {
 
       if (file) {
         setValue("avatar", newFile, { shouldValidate: true });
+        // console.log("avatar", newFile);
+        // console.log("formData", formData);
       }
     },
     [setValue]
   );
+  const onSubmit = async (e) => {
+    e.preventDefault();
+
+    const data = methods.getValues();
+    formData.append("name", data.name);
+    formData.append("gender", data.gender);
+    formData.append("birthDate", data.birthDate);
+    formData.append("avatar", data.avatar);
+    // const formDataObject = Object.fromEntries(formData);
+    // console.log("form data", formDataObject);
+    try {
+      await updateUserProfile(formData, data, setLoading); // Gọi hàm updateUser với dữ liệu từ form
+      // Thực hiện các hành động sau khi update user thành công
+      dispatch(fetchUserProfile());
+    } catch (error) {
+      // Xử lý lỗi nếu có
+    }
+  };
+
   const handleGenderChange = (e) => {
-    setGenderValue(e.target.value); // Update gender value
-    setValue("gender", e.target.value); // Update form value
+    const selectedGender = e.target.value;
+    setGenderValue(selectedGender); // Update the genderValue state
+    setValue("gender", selectedGender); // Update the form value
   };
   return (
-    <FormProvider methods={methods} onSubmit={onSubmit}>
-      <Stack spacing={3}>
+    <>
+      {/* Hiển thị loading khi đang chờ phản hồi từ server */}
+      {loading && (
+        <div
+          style={{
+            position: "absolute",
+            textAlign: "center",
+            fontWeight: "bold",
+            color: "red",
+            top: "90%",
+            left: "15%"
+          }}
+        >
+          Loading...
+        </div>
+      )}
+
+      <FormProvider methods={methods} onSubmit={onSubmit}>
         <Stack spacing={3}>
-          {/* AVATAR */}
-          <RHFUploadAvatar
-            name="avatar"
-            maxSize={3145728}
-            onDrop={handleDrop}
-          />
-          <Typography>Name:</Typography>
-          <RHFTextField name="name" label="Name" helperText={""} />
+          <Stack spacing={3}>
+            {/* AVATAR */}
+            <RHFUploadAvatar
+              name="avatar"
+              maxSize={3145728}
+              onDrop={handleDrop}
+            />
+            <Typography>Name:</Typography>
+            <RHFTextField name="name" label="Name" helperText={""} />
 
-          {/*GENDER*/}
-          <Typography>Gender:</Typography>
+            {/*GENDER*/}
+            <Typography>Gender:</Typography>
 
-          <FormControl component="fieldset">
-            <RadioGroup
-              row
-              aria-label="gender"
-              name="gender"
-              value={genderValue}
-              onChange={handleGenderChange} 
+            <FormControl component="fieldset">
+              <RadioGroup
+                row
+                aria-label="gender"
+                name="gender"
+                value={genderValue}
+                onChange={handleGenderChange}
+              >
+                <FormControlLabel
+                  value="male"
+                  control={<Radio />}
+                  label="Male"
+                />
+                <FormControlLabel
+                  value="female"
+                  control={<Radio />}
+                  label="Female"
+                />
+              </RadioGroup>
+            </FormControl>
 
+            {/*Birth day*/}
+            <Typography>Birth date (M/D/Y):</Typography>
+            <RHFText name="birthDate" type="date" />
+          </Stack>
+          <Stack direction={"row"} justifyContent={"end"}>
+            {!loading && <Button
+              color="primary"
+              size="large"
+              type="submit"
+              variant="outlined"
             >
-              <FormControlLabel value="male" control={<Radio />} label="Male" />
-              <FormControlLabel
-                value="female"
-                control={<Radio />}
-                label="Female"
-              />
-            </RadioGroup>
-          </FormControl>
-
-          {/*Birth day*/}
-          <Typography>Birth date (M/D/Y):</Typography>
-          <RHFText name="birthDate" type="date" />
+              Save
+            </Button>}
+          </Stack>
         </Stack>
-        <Stack direction={"row"} justifyContent={"end"}>
-          <Button color="primary" size="large" type="submit" variant="outlined">
-            Save
-          </Button>
-        </Stack>
-      </Stack>
-    </FormProvider>
+      </FormProvider>
+    </>
   );
 };
 

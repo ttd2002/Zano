@@ -14,9 +14,9 @@ const Friend = () => {
   const [userId, setUserId] = useState("");
   const [avatar, setAvatar] = useState("");
   const socket = io(`http://${ipAddress}:8000`);
-  socket.on("Render", () => {
-    fetchFriends();
-  })
+  // socket.on("Render", () => {
+  //   fetchFriends();
+  // })
   useEffect(() => {
     const fetchUser = async () => {
       const userString = await AsyncStorage.getItem("auth");

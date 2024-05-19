@@ -209,6 +209,29 @@ const uploadImageApp = async (req, res) => {
         res.status(500).json({ message: "Group creation failed" });
     }
 };
+
+const getMessages = async (req, res) => {
+    try {
+        const { conversationId, senderId } = req.query;
+        console.log("conversationId", senderId);
+        const conversations = await Chat.find({
+            _id: conversationId,
+        }).populate("participants", "_id name avatar");
+        let data = conversations[0].messages.filter(message => !message.deletedBy.includes(senderId));
+        for (let i = 0; i < data.length; i++) {
+            if (data[i].recall) {
+                data[i].message = 'This message has been recalled';
+                data[i].type = 'text'
+            }
+        }
+
+
+        res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ message: "Error in getting messages", error });
+    }
+}
+
 module.exports = {
-    messaged, deleteMessage, recallMessage, messages, createConversationSingleChatApp, uploadImageApp, getOneConversationApp
+    messaged, deleteMessage, recallMessage, messages, createConversationSingleChatApp, uploadImageApp, getOneConversationApp,getMessages
 };

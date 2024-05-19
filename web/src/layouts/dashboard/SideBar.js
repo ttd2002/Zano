@@ -30,12 +30,9 @@ const getPath = (index) => {
   switch (index) {
     case 0:
       return "/app";
-
     case 1:
-      return "/group";
-    case 2:
       return "/call";
-    case 3:
+    case 2:
       return "/settings";
 
     default:
@@ -67,7 +64,9 @@ const SideBar = () => {
   const loadingProfile = useSelector(selectUserProfileLoading);
   const errorProfile = useSelector(selectUserProfileError);
   const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
+    if (event && event.currentTarget) {
+      setAnchorEl(event.currentTarget);
+    }
   };
 
   const handleClose = () => {
@@ -156,7 +155,7 @@ const SideBar = () => {
               )
             )}
             <Divider sx={{ width: "48" }} />
-            {selected === 3 ? (
+            {selected === 2 ? (
               <Box
                 p={1}
                 sx={{
@@ -171,8 +170,8 @@ const SideBar = () => {
             ) : (
               <IconButton
                 onClick={() => {
-                  navigate(getPath(3));
-                  setSelected(3);
+                  navigate(getPath(2));
+                  setSelected(2);
                 }}
                 sx={{
                   width: "max-content",
@@ -205,7 +204,7 @@ const SideBar = () => {
               aria-controls={open ? "basic-menu" : undefined}
               aria-haspopup="true"
               aria-expanded={open ? "true" : undefined}
-              onClick={handleClick}
+              onClick={(event) => handleClick(event)}
               src={avatar}
             />
           </StyledBadge>

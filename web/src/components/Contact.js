@@ -30,6 +30,8 @@ import { ToggleSidebar, UpdateSidebarType } from "../redux/slices/app";
 import { faker } from "@faker-js/faker";
 import AntSwitch from "./AntSwitch";
 import { scrollElements, showScrollbars } from "./Scrollbar";
+import useConversation from "../zustand/useConversation";
+import { ExitToApp } from "@mui/icons-material";
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -81,6 +83,7 @@ const DeleteDialog = ({ open, handleClose }) => {
 };
 
 const Contact = () => {
+  
   useEffect(() => {
     scrollElements.forEach((el) => {
       el.addEventListener("scroll", showScrollbars);
@@ -104,7 +107,10 @@ const Contact = () => {
   const handeCloseDelete = () => {
     setOpenDelete(false);
   };
-
+  const { selectedConversation, setSelectedConversation } = useConversation();
+  console.log("selected conversation",selectedConversation);
+  // const avatar = selectedConversation.avatar;
+  // const name = selectedConversation.name;
   return (
     <Box sx={{ width: 320, height: "100vh" }}>
       <Stack sx={{ height: "100%" }}>
@@ -125,7 +131,7 @@ const Contact = () => {
             alignItems={"center"}
             justifyContent={"space-between"}
           >
-            <Typography variant="subtitle2">Contact Infomation</Typography>
+            <Typography variant="subtitle2">Infomation</Typography>
             <IconButton
               onClick={() => {
                 dispatch(ToggleSidebar());
@@ -166,17 +172,13 @@ const Contact = () => {
         >
           <Stack alignItems={"center"} direction={"row"} spacing={2}>
             <Avatar
-              src={faker.image.avatar()}
-              alt={faker.name.firstName}
+             // src={avatar}
+              alt="selected conversation name"
               sx={{ height: 64, width: 64 }}
             />
             <Stack spacing={0.5}>
               <Typography variant="article" fontWeight={600}>
-                {faker.name.fullName()}
-              </Typography>
-
-              <Typography variant="body2" fontWeight={500}>
-                {"+91 999 999 999"}
+             
               </Typography>
             </Stack>
           </Stack>
@@ -185,7 +187,7 @@ const Contact = () => {
             alignItems={"center"}
             justifyContent="space-evenly"
           >
-            <Stack spacing={1} alignItems={"center"}>
+            {/* <Stack spacing={1} alignItems={"center"}>
               <IconButton>
                 <Phone />
               </IconButton>
@@ -197,15 +199,15 @@ const Contact = () => {
                 <VideoCamera />
               </IconButton>
               <Typography variant="overline">Video</Typography>
-            </Stack>
+            </Stack> */}
           </Stack>
-          <Divider />
+          {/* <Divider />
           <Stack spacing={0.5}>
             <Typography variant="article">About</Typography>
             <Typography variant="body2">Notthing about me</Typography>
           </Stack>
-          <Divider />
-          <Stack
+          <Divider /> */}
+          {/* <Stack
             direction="row"
             alignItems={"center"}
             justifyContent="space-between"
@@ -219,15 +221,15 @@ const Contact = () => {
             >
               401
             </Button>
-          </Stack>
-          <Stack direction={"row"} spacing={2} alignItems={"center"}>
+          </Stack> */}
+          {/* <Stack direction={"row"} spacing={2} alignItems={"center"}>
             {[1, 2, 3].map((el) => (
               <Box>
                 <img src={faker.image.food()} alt={faker.name.fullName()} />
               </Box>
             ))}
-          </Stack>
-          <Divider />
+          </Stack> */}
+          {/* <Divider />
           <Stack
             direction={"row"}
             alignItems={"center"}
@@ -244,8 +246,8 @@ const Contact = () => {
             >
               <CaretRight />
             </IconButton>
-          </Stack>
-          <Divider />
+          </Stack> */}
+          {/* <Divider />
 
           <Stack
             direction={"row"}
@@ -257,27 +259,27 @@ const Contact = () => {
               <Typography variant="subtitle2">Mute Notifications </Typography>
             </Stack>
             <AntSwitch />
-          </Stack>
-          <Divider />
-          <Typography>1 group in common</Typography>
-          <Stack direction={"row"} spacing={2} alignItems={"center"}>
+          </Stack> */}
+          {/* <Divider />
+          <Typography>1 group in common</Typography> */}
+          {/* <Stack direction={"row"} spacing={2} alignItems={"center"}>
             <Avatar src={faker.image.avatar()} alt={faker.name.fullName()} />
             <Stack spacing={0.5}>
               <Typography variant="subtitle2">VTD</Typography>
               <Typography variant="caption">TTD, HD, You, CMNGroup</Typography>
             </Stack>
-          </Stack>
+          </Stack> */}
 
           <Stack direction={"row"} alignItems={"center"} spacing={2}>
             <Button
               onClick={() => {
                 setOpenBlock(true);
               }}
-              startIcon={<Prohibit />}
+              startIcon={<ExitToApp />}
               fullWidth
               variant="outlined"
             >
-              Block
+              Exit
             </Button>
             <Button
               onClick={() => {

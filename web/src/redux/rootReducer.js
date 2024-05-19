@@ -2,11 +2,13 @@ import { combineReducers } from "redux";
 import storage from "redux-persist/lib/storage";
 import appReducer from "./slices/app";
 import authReducer from "./slices/auth";
-import messageReducer from './slices/messageSlice'; 
+import messageReducer from './slices/messageSlice';
 import userReducer from './slices/userSlice'
 import chatReducer from "./slices/chatSlices";
-import conversationReducer from "./slices/conversationSlice";
-
+import { configureStore } from "@reduxjs/toolkit";
+// import conversationReducer from "./slices/conversationSlice";
+import conversationReducer, { conversationPersistConfig } from './slices/createSingleCoversationSlice';
+import { persistReducer } from "redux-persist";
 // slices
 
 const rootPeristConfig = {
@@ -23,8 +25,12 @@ const rootReducer = combineReducers({
   messages: messageReducer,
   user: userReducer,
   chat: chatReducer,
-  conversationReducer: conversationReducer
+  conversation: persistReducer(conversationPersistConfig, conversationReducer),
+});
+
+// Khởi tạo Redux Store
+const store = configureStore({
+  reducer: persistReducer(rootPeristConfig, rootReducer),
 });
 
 export { rootPeristConfig, rootReducer };
- 

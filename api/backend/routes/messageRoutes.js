@@ -15,5 +15,5 @@ router.post("/createConversationApp", createConversationSingleChatApp);
 
 router.post("/uploadImageApp", uploadAvatarMiddleware.single("imageChat"), handleFileSizeError, uploadImageApp);
 // router.get("/get/:id", protectRoute, getMessages);
-
+router.get("/get/:conversationId", getMessages);
 module.exports = router;

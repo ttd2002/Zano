@@ -15,7 +15,7 @@ const createGroupApp = async (req, res) => {
         const { admin, nameGroup, members, groupAvatar } = req.body;
         console.log(members);
         console.log(admin);
-        var linkAvatar = '';
+        var linkAvatar = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaxqz2kLpZuKUG11CKTbhoWe4JEH5NBB1UD6qTxhSwbg&s';
 
         if (req.file) {
             linkAvatar = req.file.path;
@@ -70,7 +70,7 @@ const removeMember = async (req, res) => {
 
         // Loại bỏ thành viên khỏi mảng participants
         conversation.participants = conversation.participants.filter(participant => participant._id.toString() !== memberId);
-
+        conversation.listAdmins = conversation.listAdmins.filter(participant => participant._id.toString() !== memberId);
         // Lưu lại cuộc trò chuyện đã cập nhật
         const updatedConversation = await conversation.save();
 
@@ -141,14 +141,11 @@ const updateMember = async (req, res) => {
 
         if (admins) {
             // Lọc ra những admin chưa có trong listAdmins
-            const newAdmins = admins.filter(adminId => 
-                !conversation.listAdmins.some(admin => admin._id.toString() === adminId)
-            );
-            const adminObjects = await Promise.all(newAdmins.map(async adminId => {
+            const adminObjects = await Promise.all(admins.map(async adminId => {
                 const admin = await User.findById(adminId); // Thay Member bằng tên model của thành viên
                 return admin;
             }));
-            conversation.listAdmins = [...conversation.listAdmins, ...adminObjects];
+            conversation.listAdmins = adminObjects
         }
 
         // Lưu lại cuộc trò chuyện đã cập nhật

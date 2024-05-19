@@ -260,7 +260,17 @@ const Options2 = ({ type, conversation, userId }) => {
                             <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '65%' }}>{item.name} {item._id === conversation.leader ? ' (Trưởng nhóm)' : conversation.listAdmins.includes(item._id) ? ' (Phó nhóm)' : ''}</Text>
 
                             <View style={styles.section}>
-                                {item._id !== userId && item._id !== conversation.leader && !conversation.listAdmins.includes(item._id) && conversation.listAdmins.includes(userId) ? (
+                                {userId === conversation.leader ? (
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            handleDeleteMember(item._id);
+                                        }}
+                                    >
+                                        <AntDesign name="delete" size={24} color="black" />
+                                    </TouchableOpacity>
+
+                                ) : null}
+                                {userId !== conversation.leader && item._id !== userId && item._id !== conversation.leader && !conversation.listAdmins.includes(item._id) && conversation.listAdmins.includes(userId) ? (
                                     <TouchableOpacity
                                         onPress={() => {
                                             handleDeleteMember(item._id);
@@ -284,19 +294,19 @@ const Options2 = ({ type, conversation, userId }) => {
                             <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '65%' }}>{item.name} {item._id === conversation.leader ? ' (Trưởng nhóm)' : conversation.listAdmins.includes(item._id) ? ' (Phó nhóm)' : ''}</Text>
 
                             <View style={styles.section}>
-                                {item._id !== userId 
-                                && item._id !== conversation.leader 
-                                && conversation.listAdmins.includes(userId) 
-                                ? (
-                                    <TouchableOpacity style={{ flexDirection: 'row',borderWidth:1, borderRadius:5 }}
-                                        onPress={() => {
-                                            handleChangeLeader(item._id);
-                                        }}
-                                    >
-                                        <AntDesign name="key" size={24} color="gold" />
-                                        <AntDesign name="user" size={24} color="black" />
-                                    </TouchableOpacity>
-                                ) : null}
+                                {item._id !== userId
+                                    && item._id !== conversation.leader
+                                    && conversation.listAdmins.includes(userId)
+                                    ? (
+                                        <TouchableOpacity style={{ flexDirection: 'row', borderWidth: 1, borderRadius: 5 }}
+                                            onPress={() => {
+                                                handleChangeLeader(item._id);
+                                            }}
+                                        >
+                                            <AntDesign name="key" size={24} color="gold" />
+                                            <AntDesign name="user" size={24} color="black" />
+                                        </TouchableOpacity>
+                                    ) : null}
 
                             </View>
                         </View>

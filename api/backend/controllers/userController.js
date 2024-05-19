@@ -417,9 +417,10 @@ const getListUsers = async (req, res) => {
     try {
         const loggedUserId = req.user._id;
         const listConversations = await Chat.find({
-                        participants: {$in:loggedUserId.toString()},
-                    }).populate("participants", "_id name avatar");
-                    console.log("con",listConversations.participants);
+            participants: { $in: loggedUserId.toString() },
+        })
+            .populate("participants", "_id name avatar phone")
+            .sort({ updatedAt: -1 }); // Sắp xếp theo updatedAt giảm dần để lấy thời gian mới nhất đầu tiên
 
         res.status(200).json(listConversations);
     } catch (error) {
@@ -427,6 +428,180 @@ const getListUsers = async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 }
+const getListFriendRequestSend = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        console.log(userId);
+        // Tìm người dùng trong cơ sở dữ liệu
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Tìm danh sách yêu cầu kết bạn đã gửi của người dùng
+        const friendRequests = await User.find({ friendRequests: { $in: [userId] } }).select("-password");
+        res.status(200).json(friendRequests);
+
+    } catch (error) {
+        console.log("Error in getListFriendRequest controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+}
+
+// Hàm hủy yêu cầu kết bạn
+const cancelFriendsRequest = async (req, res) => {
+    try {
+        const { senderId, receiverId } = req.body;
+
+        // Tìm người nhận yêu cầu kết bạn trong CSDL
+        const receiver = await User.findById(receiverId);
+
+        if (!receiver) {
+            return res.status(404).json({ error: "Receiver not found" });
+        }
+
+        // Xóa yêu cầu kết bạn từ người gửi trong danh sách friendRequests của người nhận
+        receiver.friendRequests.pull(senderId);
+        await receiver.save();
+
+        return res.status(200).json({ message: "Friend request canceled successfully" });
+    } catch (error) {
+        console.log("Error in cancelFriendsRequest controller:", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+const getListFriendRequestReceived = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        // Tìm user theo id và lấy danh sách yêu cầu kết bạn
+        const user = await User.findById(userId).populate("friendRequests", "name phone avatar");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.status(200).json(user.friendRequests); // Trả về danh sách yêu cầu kết bạn
+    } catch (error) {
+        console.log("Error fetching friend requests received:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+//lấy user không phải là bạn bè
+const listUserNotFriend = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        // Tìm user theo id và lấy danh sách bạn bè
+        const user = await User.findById(userId).populate("listFriend", "name phone avatar");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        // Lấy danh sách tất cả người dùng
+        const allUsers = await User.find({ _id: { $ne: userId } }, "name phone avatar");
+        // Loại bỏ những người trong danh sách bạn bè của user
+        const usersExceptFriends = allUsers.filter(u => !user.listFriend.some(friend => friend._id.equals(u._id)));
+        res.status(200).json(usersExceptFriends); // Trả về danh sách người dùng ngoại trừ danh sách bạn bè
+    } catch (error) {
+        console.log("Error fetching users except friends:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+const unfriend = async (req, res) => {
+    try {
+        const { senderId, friendId } = req.body;
+
+        // Tìm user và friend theo id
+        const user = await User.findById(senderId);
+        const friend = await User.findById(friendId);
+
+        if (!user || !friend) {
+            return res.status(404).json({ message: "User or friend not found" });
+        }
+
+        // Xóa friendId khỏi danh sách bạn bè của user
+        user.listFriend.pull(friendId);
+        await user.save();
+
+        // Xóa userId khỏi danh sách bạn bè của friend
+        friend.listFriend.pull(senderId);
+        await friend.save();
+
+        res.status(200).json({ message: "Unfriended successfully" });
+    } catch (error) {
+        console.log("Error unfriending:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+const getOtherUserById = async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const user = await User.findById(userId).select("name phone avatar");
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.status(200).json(user);
+    } catch (error) {
+        console.log("Error getting other user:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+const getPasswordById = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        // Tìm user trong cơ sở dữ liệu bằng id
+        const user = await User.findById(userId);
+
+        // Kiểm tra nếu user không tồn tại
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Trích xuất password đã được mã hóa từ user object
+        const hashedPassword = user.password;
+
+        // Giải mã password đã được mã hóa
+        const password = bcrypt.compare(hashedPassword, 10);
+
+        // Trả về password đã được giải mã
+        return res.status(200).json({ password });
+    } catch (error) {
+        // Xử lý lỗi nếu có
+        console.error("Error getting password by id:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+const changePasswordWeb = async (req, res) => {
+    try {
+        const { id, newPassword, currentPassword } = req.body;
+        const user = await User.findById(id);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // So sánh currentPassword với password đã được mã hóa của user
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        console.log("old pass", currentPassword)
+        console.log("new pass", newPassword)
+        console.log("isMatch", isMatch)
+        if (!isMatch) {
+            return res.status(400).json({ message: "Current password is incorrect" });
+        }
+        if (newPassword === currentPassword) {
+            return res.status(401).json({ message: "New password must be different from current password" });
+        }
+        // Mã hóa newPassword và lưu vào password của user
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedNewPassword;
+        await user.save();
+
+        return res.status(200).json({ message: "Password updated successfully", user });
+    } catch (error) {
+        console.error("Error changing password", error);
+        res.status(500).json({ message: "Error changing password" });
+    }
+};
 module.exports = {
     getUser,
     getFinded,
@@ -446,5 +621,13 @@ module.exports = {
     getAllUsers,
     getFriendRequestsByUser,
     recallFriendRequestSended,
-    unfriendUserApp
+    unfriendUserApp,
+    getListFriendRequestSend,
+    cancelFriendsRequest,
+    getListFriendRequestReceived,
+    listUserNotFriend,
+    unfriend,
+    getOtherUserById,
+    getPasswordById,
+    changePasswordWeb
 };

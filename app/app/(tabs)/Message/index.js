@@ -195,7 +195,7 @@ const index = () => {
               handleFilter(txt);
             }}
 
-            placeholder='Tìm kiếm' placeholderTextColor={'grey'} style={{ width: 295, height: 35, backgroundColor: 'white', borderRadius: 10, padding: 10 }}
+            placeholder='Tìm kiếm' placeholderTextColor={'grey'} style={{ width: '75%', height: 35, backgroundColor: 'white', borderRadius: 10, padding: 10 }}
           />
 
           <MaterialCommunityIcons
@@ -314,7 +314,7 @@ const index = () => {
       :
       <View style={styles.container}>
         <View style={{ backgroundColor: '#00abf6', justifyContent: 'center', alignItems: 'center', flexDirection: "row", alignItems: "center", gap: 10, height: 50 }}>
-          <Pressable onPress={() =>
+          <Pressable style={{marginLeft:5}} onPress={() =>
             setCheckFind(true)
           }>
             <AntDesign name="search1" size={24} color="white" />

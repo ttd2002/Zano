@@ -39,20 +39,28 @@ const index = () => {
   return (
     <View style={{ width: '100%', flex: 1 }}>
       <View style={{ backgroundColor: '#00abf6', justifyContent: 'center', alignItems: 'center', flexDirection: "row", alignItems: "center", gap: 10, height: 50 }}>
-        <Pressable>
-          <Ionicons name="chevron-back" size={24} color="white" />
-        </Pressable>
-        <TextInput
-          value={userPhone}
-          onChangeText={(txt) => setUserPhone(txt)}
-          placeholder='Tìm kiếm' placeholderTextColor={'grey'} style={{ width: 270, height: 35, backgroundColor: 'white', borderRadius: 10, padding: 10 }}
-        />
-        <Pressable onPress={() => { handleMessaged(userPhone) }}>
+        <Pressable style={{marginLeft:5}} onPress={() =>{}
+          // setCheckFind(true)
+        }>
           <AntDesign name="search1" size={24} color="white" />
+        </Pressable>
+        <Pressable onPress={() =>{}
+          // setCheckFind(true)
+        }
+        >
+          <Text style={{ color: 'white', fontSize: 15, paddingRight: 175 }}>
+            Tìm kiếm
+          </Text>
         </Pressable>
         <MaterialCommunityIcons
           name="qrcode-scan"
           size={24}
+          color="white"
+        />
+
+        <Ionicons
+          name="add"
+          size={40}
           color="white"
         />
       </View>

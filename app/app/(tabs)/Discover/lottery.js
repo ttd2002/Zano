@@ -8,7 +8,7 @@ export default function Lottery() {
   const navigation = useNavigation();
   return (
     <View style={{ flex:1 }}>
-      <View style={{ height: 50, width: '100%', backgroundColor: '#DEB887', alignItems: 'center', justifyContent: 'space-between', flexDirection: 'row', padding: 10 }}>
+      <View style={{ height: 50, width: '100%', backgroundColor: '#00abf6', alignItems: 'center', justifyContent: 'space-between', flexDirection: 'row', padding: 10 }}>
         <TouchableOpacity style={{ width: '8%', height: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 40 }}
           onPress={() => {
             navigation.goBack();

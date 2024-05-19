@@ -48,7 +48,7 @@ const HeaderCreateGroup = ({ dataCreateGroup, setDataCreateGroup, onChangeText, 
                 setAvatar(uri)
                 setSource(source)
                 setModalVisible(false)
-                console.log(result);
+                // console.log(result);
             }
         } catch (error) {
             console.log("Error uploading Image: " + error)
@@ -80,8 +80,9 @@ const HeaderCreateGroup = ({ dataCreateGroup, setDataCreateGroup, onChangeText, 
                     'Content-Type': 'multipart/form-data'
                 }
             }).then(res => res.json()).then(data => {
-                console.log(data.group);
+                // console.log(data.group);
                 if(data.group){
+                    router.replace("/PhoneBook");
                     Alert.alert('Tạo group thành công', '', [
                         {
                             text: 'OK',

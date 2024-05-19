@@ -106,37 +106,15 @@ const MessageContainer = () => {
           };
           setReceiver(NewReceiver);
         } else if (!selectedConversation.isGroupChat) {
-          if (isCreateSingleConversation) {
-            const firstReceiver = selectedConversation.participants.filter(
-              participant => participant._id !== senderId
-            );
-            console.log("firstReceiver", firstReceiver);
-            try {
-              const response = await axios.get(`/users/getOtherUserById/${firstReceiver[1]}`);
-              console.log(response);
-              if (response.status === 200) {
-                const newReceiver = {
-                  _id: response.data._id,
-                  name: response.data.name,
-                  avatar: response.data.avatar,
-                };
-
-                setReceiver(newReceiver);
-              }
-            } catch (error) {
-              console.log(error);
-            }
-          } else {
-            for (let i = 0; i < selectedConversation.participants.length; i++) {
-              if (selectedConversation.participants[i]._id != senderId) {
-                const NewReceiver = {
-                  _id: selectedConversation.participants[i]._id,
-                  name: selectedConversation.participants[i].name,
-                  avatar: selectedConversation.participants[i].avatar,
-                };
-                setReceiver(NewReceiver);
-                //  console.log("receiver",NewReceiver);
-              }
+          for (let i = 0; i < selectedConversation.participants.length; i++) {
+            if (selectedConversation.participants[i]._id != senderId) {
+              const NewReceiver = {
+                _id: selectedConversation.participants[i]._id,
+                name: selectedConversation.participants[i].name,
+                avatar: selectedConversation.participants[i].avatar,
+              };
+              setReceiver(NewReceiver);
+              //  console.log("receiver",NewReceiver);
             }
           }
         }
@@ -178,7 +156,6 @@ const MessageContainer = () => {
       console.error("Error fetching messages:", error);
     }
   };
-
   useEffect(() => {
     fetchMessages(); // Fetch messages when selectedConversation changes
   }, [selectedConversation]);
@@ -258,6 +235,7 @@ const MessageContainer = () => {
       }
       setMessage("");
       setShowEmojiPicker(false);
+      socket.emit("requestRender");
     } catch (error) {
       console.log(error);
     }
@@ -490,6 +468,7 @@ const MESSAGES = ({ messages, selectedConversation, setMessages }) => {
   }, [messages]);
 
   const [isRecalled, setIsRecalled] = useState(false);
+  const { socket } = useConversation();
   const handleRecallMessage = async (messageId) => {
     const confirmRecall = window.confirm("Are you sure to want to recall this message?");
     if (confirmRecall) {
@@ -508,6 +487,7 @@ const MESSAGES = ({ messages, selectedConversation, setMessages }) => {
                 type: "text"
               };
             }
+            socket.emit("requestRender");
             return message;
           });
           setMessages(recalledMessages);

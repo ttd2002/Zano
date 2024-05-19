@@ -106,7 +106,6 @@ const createConversationSingleChatApp = async (req, res) => {
         // Lưu cuộc trò chuyện mới
         const savedConversation = await newConversation.save();
         console.log("savedConversation", savedConversation);
-        io.emit('newConversation', savedConversation);
         // Trả về thông tin của cuộc trò chuyện vừa tạo thành công
         res.status(201).json({ message: "Conversation created successfully", conversation: savedConversation });
     } catch (error) {

@@ -34,38 +34,15 @@ const Conversation = ({ conversation, lastIdx, isCreateConversation }) => {
           setIsGroup(true);
           setReceiver(NewReceiver);
         } else if (!conversation.isGroupChat) {
-          const firstReceiver = conversation.participants.filter(
-            (participant) => participant !== senderId
-          );
-          if (isCreateConversation) {
-            try {
-              const response = await axios.get(
-                `/users/getOtherUserById/${firstReceiver[0]}`
-              );
-              // console.log(response);s
-              if (response.status === 200) {
-                const newReceiver = {
-                  _id: response.data._id,
-                  name: response.data.name,
-                  avatar: response.data.avatar,
-                };
-                setIsGroup(false);
-                setReceiver(newReceiver);
-              }
-            } catch (error) {
-              console.log(error);
-            }
-          } else {
-            for (let i = 0; i < conversation.participants.length; i++) {
-              if (conversation.participants[i]._id != senderId) {
-                const NewReceiver = {
-                  _id: conversation.participants[i]._id,
-                  name: conversation.participants[i].name,
-                  avatar: conversation.participants[i].avatar,
-                };
-                setReceiver(NewReceiver);
-                //  console.log("receiver",NewReceiver);
-              }
+          for (let i = 0; i < conversation.participants.length; i++) {
+            if (conversation.participants[i]._id != senderId) {
+              const NewReceiver = {
+                _id: conversation.participants[i]._id,
+                name: conversation.participants[i].name,
+                avatar: conversation.participants[i].avatar,
+              };
+              setReceiver(NewReceiver);
+              //  console.log("receiver",NewReceiver);
             }
           }
         }

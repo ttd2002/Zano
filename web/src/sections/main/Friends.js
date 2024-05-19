@@ -24,7 +24,7 @@ import axios from "../../utils/axios";
 import Chats from "../../pages/dashboard/Chats";
 import toast from "react-hot-toast";
 import { setIsCreateSingleConversation } from '../../redux/slices/createSingleCoversationSlice';
-import useConversation from "../../zustand/useConversation";
+import useConversation, { socket } from "../../zustand/useConversation";
 // danh sách người dùng không bao gồm bạn bè
 const UserList = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,6 +35,7 @@ const UserList = () => {
   const senderId = localStorage.getItem("loginId");
   const [isInitialized, setIsInitialized] = useState(false);
   const [userListUpdated, setUserListUpdated] = useState(false);
+  const { socket } = useConversation();
 
   // Fetch users and initialize request sent map
   useEffect(() => {
@@ -89,6 +90,7 @@ const UserList = () => {
           )
         );
         toast.success("Friend request sent successfully.");
+        socket.emit("requestRender");
       } else
         toast.error("Error sending friend request");
     } catch (error) {
@@ -308,18 +310,30 @@ const FriendRequestSend = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [listFriendRequest, setListFriendRequest] = useState([]);
   const senderId = localStorage.getItem("loginId");
+  const { socket } = useConversation();
+
+  const fetchFriendRequests = async () => {
+    try {
+      const response = await axios.get(
+        `/users/getListFriendRequestSend/${senderId}`
+      );
+      setListFriendRequest(response.data);
+    } catch (error) {
+      console.log("Error fetching friend requests", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchFriendRequests = async () => {
-      try {
-        const response = await axios.get(
-          `/users/getListFriendRequestSend/${senderId}`
-        );
-        setListFriendRequest(response.data);
-      } catch (error) {
-        console.log("Error fetching friend requests", error);
-      }
-    };
+    if (!socket) return;
+    socket.on("Render", () => {
+      fetchFriendRequests();
+    });
+    return () => {
+      socket.off("Render");
+    }
+  }, [socket]);
+
+  useEffect(() => {
     fetchFriendRequests();
   }, []);
 
@@ -337,6 +351,7 @@ const FriendRequestSend = () => {
             prevList.filter((user) => user._id !== userId)
           );
           toast.success("Friend request canceled successfully.");
+          socket.emit('requestRender');
         } else
           toast.error("Error canceling friend request");
       } catch (error) {
@@ -406,20 +421,31 @@ const FriendRequestReceived = ({ onAcceptFriendRequest }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [listFriendRequest, setListFriendRequest] = useState([]);
   const senderId = localStorage.getItem("loginId");
+  const { socket } = useConversation();
   // const [accept, setAccept] = useState(1);
+  const fetchFriendRequests = async () => {
+    try {
+      const response = await axios.get(
+        `/users/getListFriendRequestReceived/${senderId}`
+      );
+      setListFriendRequest(response.data);
+    } catch (error) {
+      console.log("Error fetching friend requests", error);
+    }
+  };
   useEffect(() => {
-    const fetchFriendRequests = async () => {
-      try {
-        const response = await axios.get(
-          `/users/getListFriendRequestReceived/${senderId}`
-        );
-        setListFriendRequest(response.data);
-      } catch (error) {
-        console.log("Error fetching friend requests", error);
-      }
-    };
     fetchFriendRequests();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on("Render", () => {
+      fetchFriendRequests();
+    });
+    return () => {
+      socket.off("Render");
+    }
+  }, [socket]);
 
   const handleResponse = async (userId, response) => {
     if (response === 0) {
@@ -437,6 +463,7 @@ const FriendRequestReceived = ({ onAcceptFriendRequest }) => {
             );
             // console.log("Friend request rejected");
             toast.success(`${resRequest.data.message}`);
+            socket.emit('requestRender');
           } else
             toast.error("Error rejectting to friend request");
         } catch (error) {
@@ -458,6 +485,7 @@ const FriendRequestReceived = ({ onAcceptFriendRequest }) => {
           );
           console.log("Friend request accepted");
           toast.success(`${resRequest.data.message}`);
+          socket.emit('requestRender');
           onAcceptFriendRequest();
         } else
           toast.error("Error acceptting to friend request");
@@ -543,20 +571,30 @@ const Friends = ({ open, handleClose, onCreateConversation, isCreateConversation
   const [listFriend, setListFriend] = useState([]);
   const senderId = localStorage.getItem("loginId");
 
+  const fetchFriend = async () => {
+    try {
+      const response = await axios.get(
+        `/users/${senderId}/friends`
+      );
+      setListFriend(response.data.friends);
+    } catch (error) {
+      console.log("Error fetching friends", error);
+    }
+  };
+
   useEffect(() => {
-    const fetchFriend = async () => {
-      try {
-        const response = await axios.get(
-          `/users/${senderId}/friends`
-        );
-        setListFriend(response.data.friends);
-        console.log("Friends",response.data.friends);
-      } catch (error) {
-        console.log("Error fetching friends", error);
-      }
-    };
     fetchFriend();
   }, [friendKey]);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on("Render", () => {
+      fetchFriend();
+    });
+    return () => {
+      socket.off("Render");
+    }
+  }, [socket]);
 
   const handleUnfriend = async (userId) => {
     const confirmCancel = window.confirm("Are you sure you want to unfriend?");
@@ -574,6 +612,7 @@ const Friends = ({ open, handleClose, onCreateConversation, isCreateConversation
           // window.alert("Unfriended successfully.");
           toast.success("Unfriended successfully.");
           setFriendKey((prevKey) => prevKey + 1);
+          socket.emit('requestRender');
         } else
           toast.error("Error unfriending");
       } catch (error) {
@@ -603,8 +642,7 @@ const Friends = ({ open, handleClose, onCreateConversation, isCreateConversation
         setIsCreateConversation(true);
         dispatch(setIsCreateSingleConversation(true));
         handleClose();
-        // socket.emit('newConversation', existingConversation.data.conversation);
-        console.log("newConversation event sent successfully");
+        socket.emit('requestRender');
       } else
         toast.error("Error creating conversation");
     } catch (error) {

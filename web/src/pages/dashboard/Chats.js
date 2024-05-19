@@ -36,7 +36,7 @@ import RHFTextField from "../../components/hook-form/RHFTextField";
 import RHFAutocomplete from "../../components/hook-form/RHFAutocomplete";
 import isEqual from 'lodash/isEqual';
 import useConversation from "../../zustand/useConversation";
-
+import toast from "react-hot-toast";
 
 import Conversations from "../../components/Conversation/Conversations/Conversations";
 
@@ -62,17 +62,7 @@ const Chats = () => {
 
   const handleOpenGroupDialog = () => {
     setOpenGroupDialog(true);
-  };
-  // useEffect(() => {
-  //   // Xử lý sự kiện khi nhận được cuộc trò chuyện mới
-  //   if (!socket) return;
-  //   socket.on('newConversation', (conversation) => {
-  //     addConversation(conversation);
-  //     console.log("conversation socket", conversation);
-  //   });
-
-  //   return () => socket.close();
-  // }, [socket, conversations]);
+  }
 
   const addConversation = (conversation) => {
     // Kiểm tra xem cuộc trò chuyện đã tồn tại trong danh sách chưa
@@ -284,6 +274,7 @@ const CreateGroup = ({ open, handleClose, onCreateConversation }) => {
   const [newConversation, setNewConversation] = useState(null);
   const [selectedFile, setSelectedFile] = useState();
   const senderId = localStorage.getItem("loginId");
+  const { socket } = useConversation();
   const handleCreateConversation = (conversation) => {
     setNewConversation(conversation); // Nhận conversation mới từ CreateGroupForm
     onCreateConversation(conversation); // Thêm conversation mới vào danh sách conversations
@@ -350,7 +341,10 @@ const CreateGroup = ({ open, handleClose, onCreateConversation }) => {
   };
 
   const onSubmit = async (data) => {
-    if (!selectedFile) return;
+    const formData = new FormData();
+    if (selectedFile) {
+      formData.append("groupAvatar", selectedFile);
+    };
     try {
       const userId = localStorage.getItem("loginId");
       const { watch } = methods;
@@ -365,9 +359,6 @@ const CreateGroup = ({ open, handleClose, onCreateConversation }) => {
       selectedMemberIds.push(userId);
 
       // console.log("Selected Member IDs:", selectedMemberIds);
-
-      const formData = new FormData();
-      formData.append("groupAvatar", selectedFile);
 
       // Gửi các trường khác như là các thuộc tính của object
       formData.append("admin", userId);
@@ -390,13 +381,16 @@ const CreateGroup = ({ open, handleClose, onCreateConversation }) => {
       );
       const data = response.data.group;
       if (response.status === 201) {
-        alert("Create group success");
+        toast.success("Create group success");
         setCheck(true);
         onCreateConversation(data);
         setSelectedFile(null);
+        socket.emit("requestRender");
+        handleClose();
       }
       console.log("DATA", data);
     } catch (error) {
+      toast.error("Create group failed");
       console.log("Error", error);
     }
   };

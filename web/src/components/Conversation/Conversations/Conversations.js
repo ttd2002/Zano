@@ -15,25 +15,6 @@ const Conversations = ({ ListConversations, isCreateConversation }) => {
       setConversationsState(conversations);
     }
   }, [loading, conversations]);
-  useEffect(() => {
-    // Lắng nghe sự kiện newConversation khi có sự thay đổi trong ListConversations
-    console.log("conversation socket");
-    console.log("socket", socket);
-    if (!socket) console.log("socket is null");
-    if (socket) {
-      console.log("socket is not null");
-      socket.on('newConversation', (conversation) => {
-        console.log("conversation socket", conversation);
-        // Thêm cuộc trò chuyện mới vào danh sách conversationsState
-        setConversationsState(prevConversations => [...prevConversations, conversation]);
-      });
-    }
-    return () => {
-      if (socket) {
-        socket.off('newConversation');
-      }
-    };
-  }, [socket, ListConversations]);
 
   useEffect(() => {
     // Cập nhật state conversations với giá trị mới từ props ListConversations

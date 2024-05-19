@@ -194,7 +194,15 @@ const Options = () => {
             <View style={{ backgroundColor: '#00abf6', justifyContent: 'flex-start', alignItems: 'center', flexDirection: "row", alignItems: "center", gap: 10, height: 50 }}>
                 <TouchableOpacity style={{ marginLeft: 10 }} onPress={() => {
                     // router.replace('/Message') 
-                    navigation.goBack()
+                    // navigation.goBack()
+                    router.replace({
+                        pathname: '/Message/chatRoom',
+                        params: {
+                            uname:params?.uname,
+                            conversationId: params?.conversationId,
+                            senderId: params?.senderId,
+                        }
+                    })
                 }}>
                     <Ionicons name="chevron-back" size={24} color="white" />
                 </TouchableOpacity>
@@ -360,7 +368,7 @@ const Options = () => {
                     {/* Button giải tán nhóm */}
                     {isLeader === true && (
                         <TouchableOpacity
-                            style={{ backgroundColor: '#00abf6', justifyContent: 'center', alignItems: 'center', height: 40, marginTop: 10 }}
+                            style={{ backgroundColor: 'red', justifyContent: 'center', alignItems: 'center', height: 40, marginTop: 10 }}
                             onPress={() => { handleDeleteGroup(); }}
                         >
                             <Text style={{ color: 'white',width:'80%' }}>Giải tán nhóm</Text>

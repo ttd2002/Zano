@@ -217,7 +217,7 @@ const getListFriendRequestIdsSendApp = async (req, res) => {
 
         // Tìm danh sách yêu cầu kết bạn của người dùng
         const friendRequests = await User.find({ friendRequests: { $in: [userId] } }).select('_id name avatar');
-        const friendRequestIds = friendRequests.map(user => user._id.toString());
+        // const friendRequestIds = friendRequests.map(user => user._id.toString());
         res.status(200).json(friendRequests);
 
     } catch (error) {
@@ -301,6 +301,46 @@ const recallFriendRequestSended = async (req, res) => {
     } catch (error) {
         console.log("Error in recallFriendRequestSended controller: ", error.message);
         // Trả về thông báo lỗi nếu có lỗi xảy ra
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+const unfriendUserApp = async (req, res) => {
+    try {
+        const { userId, friendId } = req.body;
+        console.log('userId',userId);
+        console.log('friendId',friendId);
+        // Validate input
+        if (!userId || !friendId) {
+            return res.status(400).json({ error: "User ID and Friend ID are required" });
+        }
+
+        // Find the user in the database by userId
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Find the friend in the database by friendId
+        const friend = await User.findById(friendId);
+        if (!friend) {
+            return res.status(404).json({ error: "Friend not found" });
+        }
+
+        // Remove friendId from user's friend list
+        user.listFriend = user.listFriend.filter(id => id.toString() !== friendId.toString());
+
+        // Remove userId from friend's friend list
+        friend.listFriend = friend.listFriend.filter(id => id.toString() !== userId.toString());
+
+        // Save the updated user and friend documents
+        await user.save();
+        await friend.save();
+        console.log('userId',userId);
+        console.log('friendId',friendId);
+        res.status(200).json({ message: `You have unfriended ${friend.name}` });
+    } catch (error) {
+        // console.log("Error in unfriendUser controller:", error.message);
         res.status(500).json({ error: "Internal server error" });
     }
 };
@@ -405,5 +445,6 @@ module.exports = {
     getListUsers,
     getAllUsers,
     getFriendRequestsByUser,
-    recallFriendRequestSended
+    recallFriendRequestSended,
+    unfriendUserApp
 };

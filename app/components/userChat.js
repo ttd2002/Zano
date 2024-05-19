@@ -62,7 +62,7 @@ const UserChat = ({ item, userId }) => {
                         senderId: userId,
                         // receiverId: item._id,
                         conversationId: item._id,
-                        uAvatar: item.avatar,
+                        // uAvatar: item.avatar,
                     }
                 })
             }}

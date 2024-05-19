@@ -187,8 +187,28 @@ const changePasswordByPhone = async (req, res) => {
         res.status(500).json({ message: "Failed to change password" });
     }
 };
+const checkPhoneExistApp = async (req, res) => {
+    try {
+        const { phone } = req.body;
 
+        // Validate input
+        if (!phone) {
+            return res.status(400).json({ exists: false, message: "Phone number is required" });
+        }
+
+        // Find the user in the database by phone number
+        const user = await User.findOne({ phone });
+        if (!user) {
+            return res.status(404).json({ exists: false, message: "User not found" });
+        }
+
+        res.status(200).json({ exists: true, message: "User exists" });
+    } catch (error) {
+        console.error("Error checking phone existence:", error);
+        res.status(500).json({ exists: false, message: "Failed to check phone existence" });
+    }
+};
 module.exports = {
-    register, login, login2, changePassword,changePasswordByPhone
+    register, login, login2, changePassword,changePasswordByPhone, checkPhoneExistApp
 };
 

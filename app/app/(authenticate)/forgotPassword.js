@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, SafeAreaView, TextInput, Pressable } from 'react-native'
+import { StyleSheet, Text, View, SafeAreaView, TextInput, Pressable, Alert } from 'react-native'
 import React, { useRef, useState } from 'react'
 import axios from 'axios'
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
@@ -11,7 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ForgotPassword = () => {
     const router = useRouter();
-    
+
     const [phone, setPhone] = useState('')
     const [code, setCode] = useState('');
 
@@ -36,13 +36,37 @@ const ForgotPassword = () => {
                 router.push({
                     pathname: '/(authenticate)/changePassword',
                     query: { phone: phone }
-                })        
+                })
             })
             .catch((error) => {
                 alert("Xác thực thất bại")
             })
     }
-    
+    const handelForgotPassword = async () => {
+        try {
+            // Gửi yêu cầu kiểm tra số điện thoại tới server
+            const response = await axios.post(`http://${ipAddress}:3000/auth/checkPhoneExistApp`, {
+                phone: phone,
+            });
+
+            // Xử lý kết quả từ server
+            if (response.data.exists) {
+                // Alert.alert("User exists");
+                // sendVerification()
+                router.navigate({
+                    pathname: '/(authenticate)/changePassword',
+                    params: {
+                        phone: phone
+                    }
+                })
+            } else {
+                Alert.alert("Không tìm thấy");
+            }
+        } catch (error) {
+            // console.error('Error checking phone existence:', error);
+            Alert.alert(error.response?.data?.message || "Failed to check phone existence");
+        }
+    };
     return (
         !verificationId ?
             <View style={styles.container}>
@@ -62,13 +86,9 @@ const ForgotPassword = () => {
                             alert("Vui lòng nhập đầy đủ thông tin")
                         }
                         else {
-                            // sendVerification()
-                            router.navigate({
-                                pathname: '/(authenticate)/changePassword',
-                                params: {
-                                    phone: phone
-                                }
-                            })
+                            handelForgotPassword();
+
+
                         }
                     }}
                     style={{ marginTop: 20, height: 50, width: 150, borderWidth: 1, borderColor: '#00abf6', justifyContent: 'center', alignItems: 'center', borderRadius: 20 }}>
@@ -92,7 +112,7 @@ const ForgotPassword = () => {
                     style={{ marginTop: 20, height: 50, width: 150, borderWidth: 1, borderColor: '#00abf6', justifyContent: 'center', alignItems: 'center', borderRadius: 20 }}>
                     <Text style={{ color: 'black', fontSize: 20, fontStyle: 'normal' }}>Xác thực</Text>
                 </Pressable>
-                
+
             </View>
     )
 }

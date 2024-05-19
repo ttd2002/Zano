@@ -44,6 +44,7 @@ const ChangePassword = () => {
             Alert.alert(error.response.data.message); 
         }
     };
+   
     console.log(params?.phone)
 
     return (

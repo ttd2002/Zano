@@ -14,17 +14,15 @@ const index = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const token = await AsyncStorage.getItem("auth");
-      const decodedToken = jwtDecode(token);
-      const userId = decodedToken.userId;
-      const name = decodedToken.uName;
-      const phone = decodedToken.phone;
-
+      const userString = await AsyncStorage.getItem("auth");
+      const user = JSON.parse(userString);
+      const userId = user._id;
+      const name = user.uName;
+      const phone = user.phone;
       setUserId(userId)
       setName(name)
       setPhone(phone)
-
-    }
+    };
 
     fetchUser();
   }, [])
@@ -164,7 +162,7 @@ const index = () => {
         </TouchableOpacity>
         <View style={{ width: '100%', height: 'auto', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
           <TouchableOpacity style={{ width: '60%', height: 'auto', borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#eeeee4' }}
-              onPress={()=>{router.replace('(authenticate)/home')}}>
+            onPress={() => { router.replace('(authenticate)/home') }}>
             <Text style={{ fontWeight: '600', fontSize: 18, color: 'black', padding: 15 }}>Đăng xuất</Text>
           </TouchableOpacity>
         </View>

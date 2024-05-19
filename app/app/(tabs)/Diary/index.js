@@ -63,18 +63,12 @@ const index = () => {
 
 
   const fetchUser = async () => {
-    try {
-      const token = await AsyncStorage.getItem("auth");
-      const decodedToken = jwtDecode(token);
-      const userId = decodedToken.userId;
-      const name = decodedToken.uName;
-      const avatar = decodedToken.uAvatar;
-      setUserId(userId);
-      setName(name);
-      setAvatar(avatar);
-    } catch (error) {
-      console.error("Error fetching user data", error);
-    }
+    const userString = await AsyncStorage.getItem("auth");
+    const user = JSON.parse(userString);
+    const userId = user._id;
+    const name = user.uName;
+    setUserId(userId)
+    setName(name)
   };
   const data = [
     {
@@ -84,23 +78,23 @@ const index = () => {
       images: [
         {
           // Không có id bị báo warning, lúc thêm dùng images.length + 1 để gán vào id
-          id:1,
+          id: 1,
           url: 'https://source.unsplash.com/random?sig=1',
         },
         {
-          id:2,
+          id: 2,
           url: 'https://source.unsplash.com/random?sig=2',
         },
         {
-          id:3,
+          id: 3,
           url: 'https://source.unsplash.com/random?sig=3',
         },
         {
-          id:4,
+          id: 4,
           url: 'https://source.unsplash.com/random?sig=4',
         },
         {
-          id:5,
+          id: 5,
           url: 'https://source.unsplash.com/random?sig=5',
         },
       ],
@@ -136,27 +130,27 @@ const index = () => {
       content: '',
       images: [
         {
-          id:1,
+          id: 1,
           url: 'https://source.unsplash.com/random?sig=1',
         },
         {
-          id:2,
+          id: 2,
           url: 'https://source.unsplash.com/random?sig=2',
         },
         {
-          id:3,
+          id: 3,
           url: 'https://source.unsplash.com/random?sig=3',
         },
         {
-          id:4,
+          id: 4,
           url: 'https://source.unsplash.com/random?sig=4',
         },
         {
-          id:5,
+          id: 5,
           url: 'https://source.unsplash.com/random?sig=5',
         },
         {
-          id:6,
+          id: 6,
           url: 'https://source.unsplash.com/random?sig=6',
         },
       ],
@@ -253,7 +247,7 @@ const index = () => {
               }}>
               <Image style={{ height: 50, width: 50 }} source={{ uri: `${item.avatar}` }}></Image>
               <View>
-                <Text style={{ fontSize: 18, fontWeight: '600' }}>Nguyen Van AA</Text>
+                <Text style={{ fontSize: 18, fontWeight: '600' }}>{name}</Text>
                 <Text style={{ fontSize: 15, fontWeight: '400' }}>Hôm nay lúc 18:21</Text>
               </View>
             </Pressable>

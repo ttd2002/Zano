@@ -114,37 +114,47 @@ const changeLeaderApp = async (req, res) => {
 };
 const updateMember = async (req, res) => {
     try {
-        const { members, admins, conversationId, } = req.body;
+        const { members, admins, conversationId } = req.body;
         console.log('conversationId', conversationId);
         console.log('admins', admins);
         console.log('members', members);
+
         // Tìm cuộc trò chuyện tương ứng
         const conversation = await Conversation.findById(conversationId);
-        if (members) {
-            const memberObjects = await Promise.all(members.map(async memberId => {
-                const member = await User.findById(memberId); // Thay Member bằng tên model của thành viên
-                return member;
-            }));
-            conversation.participants = memberObjects
-        }
-        if (admins) {
-            const adminObjects = await Promise.all(admins.map(async adminId => {
-                const admin = await User.findById(adminId); // Thay Member bằng tên model của thành viên
-                return admin;
-            }));
-            conversation.listAdmins = adminObjects
-        }
 
         // Nếu không tìm thấy cuộc trò chuyện
         if (!conversation) {
             return res.status(404).json({ message: "Conversation not found" });
         }
-        // Gán mảng memberIdArray vào mảng participants của conversation
 
+        if (members) {
+            // Lọc ra những member chưa có trong participants
+            const newMembers = members.filter(memberId => 
+                !conversation.participants.some(participant => participant._id.toString() === memberId)
+            );
+            const memberObjects = await Promise.all(newMembers.map(async memberId => {
+                const member = await User.findById(memberId); // Thay Member bằng tên model của thành viên
+                return member;
+            }));
+            conversation.participants = [...conversation.participants, ...memberObjects];
+        }
+
+        if (admins) {
+            // Lọc ra những admin chưa có trong listAdmins
+            const newAdmins = admins.filter(adminId => 
+                !conversation.listAdmins.some(admin => admin._id.toString() === adminId)
+            );
+            const adminObjects = await Promise.all(newAdmins.map(async adminId => {
+                const admin = await User.findById(adminId); // Thay Member bằng tên model của thành viên
+                return admin;
+            }));
+            conversation.listAdmins = [...conversation.listAdmins, ...adminObjects];
+        }
 
         // Lưu lại cuộc trò chuyện đã cập nhật
         const updatedConversation = await conversation.save();
         console.log('updatedConversation', updatedConversation);
+
         // Trả về phản hồi thành công
         res.status(200).json({ message: "Members updated successfully", conversation: updatedConversation });
     } catch (error) {
@@ -152,6 +162,7 @@ const updateMember = async (req, res) => {
         res.status(500).json({ message: "Failed to update members" });
     }
 };
+
 
 const removeGroupApp = async (req, res) => {
     try {

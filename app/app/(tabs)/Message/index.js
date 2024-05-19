@@ -15,6 +15,7 @@ const index = () => {
 
   socket.on("Render", () => {
     fetchUserMessaged();
+    fetchGetUser();
   })
   
   const router = useRouter();

@@ -1,4 +1,4 @@
-import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'expo-router';
 import Icon from '@mdi/react';
@@ -6,12 +6,17 @@ import { AntDesign, Feather, FontAwesome, FontAwesome5, Ionicons, MaterialCommun
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ipAddress } from '../../../config/env';
+import { io } from 'socket.io-client';
 
 const Friend = () => {
   const router = useRouter();
   const [friends, setFriends] = useState([]);
   const [userId, setUserId] = useState("");
   const [avatar, setAvatar] = useState("");
+  const socket = io(`http://${ipAddress}:8000`);
+  socket.on("Render", () => {
+    fetchFriends();
+  })
   useEffect(() => {
     const fetchUser = async () => {
       const userString = await AsyncStorage.getItem("auth");
@@ -23,6 +28,9 @@ const Friend = () => {
     };
     fetchUser();
   }, []);
+  // useEffect(() => {
+  //   fetchFriends();
+  // }, [Socket]);
   useEffect(() => {
     if (userId)
       fetchFriends();
@@ -60,7 +68,31 @@ const Friend = () => {
     });
     return Array.from(groups.values());
   };
+  const handleUnfriendUser = async (friendId) => {
+    try {
+      // Validate input
+      if (!userId || !friendId) {
+        Alert.alert('Both User ID and Friend ID are required');
+        return;
+      }
 
+      // Send unfriend request to the server
+      const response = await axios.post(`http://${ipAddress}:3000/users/app/unfriendUserApp`, {
+        userId: userId,
+        friendId: friendId,
+      });
+      // Handle the server's response
+      Alert.alert(response.data.message);
+      // socket.emit("requestRender")
+      router.replace({
+        pathname: '/PhoneBook',
+      })
+    } catch (error) {
+      console.error('Error unfriending user:', error);
+      Alert.alert(error.response?.data?.error || 'Failed to unfriend user');
+    }
+  };
+  console.log(`http://${ipAddress}:3000/users/app/handleUnfriendUser`);
   return (
     <View style={styles.container}>
       <ScrollView style={{ width: '100%' }}>
@@ -104,7 +136,7 @@ const Friend = () => {
             onPress={() => {
 
             }}>
-            <Text style={{fontSize:20}}>Danh sách bạn bè </Text>
+            <Text style={{ fontSize: 20 }}>Danh sách bạn bè </Text>
           </TouchableOpacity>
           {/* <TouchableOpacity style={{ height: 30, width: 110, borderRadius: 20, border: '1px solid grey', alignItems: 'center', justifyContent: 'center' }}
             onPress={() => {
@@ -126,8 +158,16 @@ const Friend = () => {
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={{ uri: avatar ? avatar : 'https://phongreviews.com/wp-content/uploads/2022/11/avatar-facebook-mac-dinh-15.jpg' }} />
                       <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '50%' }}>{item.name}</Text>
-                      <Ionicons name="call-outline" size={26} color="black" />
-                      <Feather name="video" size={24} color="black" />
+                      <TouchableOpacity style={{backgroundColor:'red', padding:6, borderRadius:10}}
+                        onPress={() => {
+                          handleUnfriendUser(item._id);
+                        }}
+                      >
+                        {/* <Ionicons name="call-outline" size={26} color="black" />
+                        <Feather name="video" size={24} color="black" /> */}
+                        <Text style={{color:'white'}}>Hủy bạn</Text>
+                      </TouchableOpacity>
+
                     </View>
                   </View>
                 ))}

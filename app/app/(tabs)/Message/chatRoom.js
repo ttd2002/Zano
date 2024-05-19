@@ -555,9 +555,10 @@ const chatRoom = () => {
                 </TouchableOpacity>
                 <Text style={{ fontSize: 20, color: 'white', width: '75%' }}>{params?.uName}</Text>
                 <TouchableOpacity onPress={() => {
-                    router.navigate({
+                    router.replace({
                         pathname: '/Message/options',
                         params: {
+                            uname:params?.uname,
                             conversationId: params?.conversationId,
                             senderId: params?.senderId,
                         }

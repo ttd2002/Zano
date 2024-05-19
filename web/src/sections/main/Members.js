@@ -37,7 +37,7 @@ const FriendsList = ({ onHandleAddfriend, listFriend, setListFriend }) => {
   const handleAddToGroup = (user) => {
     console.log("Selected user:", user);
     console.log("friends:", listFriend);
-    // Gọi hàm onHandleAddfriend và truyền vào user
+    // Gọi hàm onHandleAddfriend và truyền vào user-----
     onHandleAddfriend(user);
     setListFriend((prevList) => prevList.filter((friend) => friend._id !== user._id));
 

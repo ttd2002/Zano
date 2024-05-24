@@ -212,7 +212,7 @@ const SendScreen = () => {
                         <Image style={{ height: 60, width: 60, borderRadius: 100 }} src={uri = item.avatar}></Image>
                     </View>
                     <View style={{ height: 'auto', width: '50%' }}>
-                        <Text style={{ fontWeight: '600', fontSize: 18, color: 'black', witch:'50%' }}>{item.name}</Text>
+                        <Text style={{ fontWeight: '600', fontSize: 18, color: 'black' }}>{item.name}</Text>
                     </View>
                     
                         {/* <Text style={{ fontWeight: '400', fontSize: 15, color: 'grey' }}>22/01 - Từ danh thếp</Text> */}

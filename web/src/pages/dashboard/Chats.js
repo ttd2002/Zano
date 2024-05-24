@@ -17,6 +17,7 @@ import {
   CircleDashed,
   User,
   MagnifyingGlass,
+  UserPlus,
 } from "phosphor-react";
 import { useTheme } from "@mui/material/styles";
 import React, { useEffect, useState } from "react";
@@ -150,7 +151,7 @@ const Chats = () => {
                   handleOpenFriendDialog();
                 }}
               >
-                <User />
+                <UserPlus />
               </IconButton>
               <IconButton>
                 <CircleDashed />

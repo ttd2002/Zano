@@ -18,6 +18,7 @@ import toast from "react-hot-toast";
 
 import {
   Camera,
+  Chats,
   File,
   Image,
   LinkSimple,
@@ -40,37 +41,34 @@ const StyledInput = styled(TextField)(({ theme }) => ({
     paddingBottom: "12px",
   },
 }));
+
 const MessageContainer = () => {
   const [message, setMessage] = useState("");
-  const [openPicker, setOpenPicker] = React.useState(false);
-  const [value, setValue] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [receiver, setReceiver] = useState({});
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const inputRef = useRef(null);
 
-  const theme = useTheme();
-  // const { selectedConversation, setSelectedConversation, setMessages, messages } = useConversation();
   const { selectedConversation, socket } = useConversation();
-  const [selectedFile, setSelectedFile] = useState();
-  const [messages, setMessages] = useState([]);
-  const [receiver, setReceiver] = useState([]);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const senderId = localStorage.getItem("loginId");
   const isCreateSingleConversation = useSelector(selectIsCreateSingleConversation);
   const dispatch = useDispatch();
-  useEffect(() => {
-    dispatch(setIsCreateSingleConversation(false));
-  }, []); // useEffect sẽ được gọi một lần duy nhất khi component được render
+  const theme = useTheme();
 
   useEffect(() => {
-    // if (selectedConversation && !selectedConversation.isGroupChat) {
-    const fetchData = async () => {
+    dispatch(setIsCreateSingleConversation(false));
+  }, [dispatch]);
+
+  useEffect(() => {
+    const fetchReceiverData = async () => {
       if (selectedConversation) {
         if (selectedConversation.isGroupChat) {
-          const NewReceiver = {
+          setReceiver({
             _id: selectedConversation._id,
             name: selectedConversation.name,
             avatar: selectedConversation.avatar,
-          };
-          setReceiver(NewReceiver);
+          });
         } else if (!selectedConversation.isGroupChat) {
           for (let i = 0; i < selectedConversation.participants.length; i++) {
             if (selectedConversation.participants[i]._id != senderId) {
@@ -85,9 +83,9 @@ const MessageContainer = () => {
           }
         }
       }
-    }
-    fetchData();
-  }, [selectedConversation]);
+    };
+    fetchReceiverData();
+  }, [selectedConversation, senderId]);
 
   useEffect(() => {
     if (selectedConversation) {
@@ -96,7 +94,7 @@ const MessageContainer = () => {
   }, [selectedConversation]);
 
   useEffect(() => {
-    const receiveMessageHandler = async (newMessage) => {
+    const receiveMessageHandler = (newMessage) => {
       setMessages(prevMessages => [...prevMessages, newMessage]);
     };
 
@@ -107,74 +105,57 @@ const MessageContainer = () => {
       socket.off("receiveMessage", receiveMessageHandler);
     };
   }, [socket]);
-  const fetchMessages = async () => {
-    try {
-      if (!selectedConversation) return;
-      const response = await axios.get(`/mes/get/${selectedConversation._id}`, {
-        params: {
-          senderId: senderId,
-          conversationId: selectedConversation._id,
-        }
-      });
-      // console.log("mes", response.data);
-      setMessages(response.data);
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    }
-  };
+
   useEffect(() => {
-    fetchMessages(); // Fetch messages when selectedConversation changes
-  }, [selectedConversation]);
+    const fetchMessages = async () => {
+      try {
+        if (selectedConversation) {
+          const response = await axios.get(`/mes/get/${selectedConversation._id}`, {
+            params: { senderId, conversationId: selectedConversation._id }
+          });
+          setMessages(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
+    };
+    fetchMessages();
+  }, [selectedConversation, senderId]);
 
   const handleEmojiSelect = (emoji) => {
-    setMessage(message + emoji.native);
+    setMessage(prev => prev + emoji.native);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    setSelectedFile(file);
+    console.log("Selected file:", file);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // if (!message && !selectedFile) return;
-    if (message.trim() == "") return;
-    if (!selectedConversation) {
-      console.log("Không có cuộc trò chuyện nào được chọn");
-      return;
-    }
-    console.log("Sending message:", message);
-    console.log(selectedFile);
+    if (!message.trim() && !selectedFile) return;
+
     try {
-      if (selectedFile && message.trim() == "") {
-        const image = new FormData();
-        image.append("imageChat", selectedFile);
-        // console.log(image);
+      if (selectedFile) {
         const formData = new FormData();
         formData.append("imageChat", selectedFile);
 
-        const res = await axios.post(
-          "/mes/uploadImageApp",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        const res = await axios.post("/mes/uploadImageApp", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
 
-        console.log("link ảnh", res.data.link);
         socket.emit("sendMessage", {
           senderId,
           conversationId: selectedConversation._id,
           message: res.data.link,
           type: "image",
         });
-        const updatedMessages = [
-          ...messages,
-          {
-            senderId,
-            conversationId: selectedConversation._id,
-            message: res.data.link,
-            type: "image",
-          },
-        ];
-        setMessages(updatedMessages);
+
+        setMessages(prev => [
+          ...prev,
+          { senderId, conversationId: selectedConversation._id, message: res.data.link, type: "image" },
+        ]);
         setSelectedFile(null);
       } else {
         socket.emit("sendMessage", {
@@ -183,227 +164,140 @@ const MessageContainer = () => {
           message,
           type: "text",
         });
-        const updatedMessages = [
-          ...messages,
-          {
-            senderId,
-            conversationId: selectedConversation._id,
-            message,
-            type: "text",
-          },
-        ];
-        setMessages(updatedMessages);
+
+        setMessages(prev => [
+          ...prev,
+          { senderId, conversationId: selectedConversation._id, message, type: "text" },
+        ]);
       }
 
-      // console.log("ok");
-      if (message.trim() !== "") {
-        setSelectedFile(null);
-      }
       setMessage("");
       setShowEmojiPicker(false);
       socket.emit("requestRender");
     } catch (error) {
-      console.log(error);
+      console.log("Error sending message:", error);
     }
   };
 
-
-  if (!selectedConversation) {
-    return <NoChatSelected />;
-  }
-  socket.on("connection", () => {
-    console.log("Connected to the Socket server");
-  });
-  socket.emit("joinRoom", selectedConversation._id);
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0]; // Lấy tệp đầu tiên từ mảng files
-    setSelectedFile(file); // Gán giá trị tệp đã chọn vào selectedFile
-    // Xác định đuôi của tệp được chọn
-    const fileName = file.name;
-    const fileExtension = fileName.split('.').pop().toLowerCase();
-    // console.log("File extension:", fileExtension);
-  };
-  function handleEmojiClick(emoji) {
-    const input = inputRef.current;
-
-    if (input) {
-      const selectionStart = input.selectionStart;
-      const selectionEnd = input.selectionEnd;
-
-      setValue(
-        value.substring(0, selectionStart) +
-        emoji +
-        value.substring(selectionEnd)
-      );
-
-      // Move the cursor to the end of the inserted emoji
-      input.selectionStart = input.selectionEnd = selectionStart + 1;
-    }
-  }
+  if (!selectedConversation) return <NoChatSelected />;
 
   return (
-    <>
-      {!selectedConversation ? (
-        <NoChatSelected />
-      ) : (
-        <Stack height={"100%"} maxHeight={"100vh"} width={"auto"}>
-          {/* Chat header */}
-          <Header receiver={receiver} />
+    <Stack height={"100%"} maxHeight={"100vh"} width={"auto"}>
+      {/* Chat header */}
+      <Header receiver={receiver} />
 
-          {/* MSG */}
-          <Box
-            width={"100%"}
-            sx={{
-              flexGrow: 1,
-              height: "100%",
-              overflowY: "scroll",
-              "&::-webkit-scrollbar": {
-                width: "8px",
-              },
-              "&:-webkit-scrollbar-track": {
-                background: "#f1f1f1",
-              },
-              "&:-webkit-scrollbar-thumb": {
-                background: "#888",
-              },
-              "&:-webkit-scrollbar-thumb:hover": {
-                background: "#555",
-              },
-              "&.is-scrolling": {
-                "&::-webkit-scrollbar-thumb": {
-                  background: theme.palette.primary.main,
-                  borderRadius: 10,
-                },
-              },
-            }}
-          >
-            {/* Hiển thị danh sách tin nhắn */}
-            {/* <MESSAGES  /> */}
-            <MESSAGES messages={messages} selectedConversation={selectedConversation} setMessages={setMessages} />
-            {/* <MessageList userId={selectedUser._id} /> */}
-          </Box>
-          {/* Chat footer */}
+      {/* MSG */}
+      <Box
+        width={"100%"}
+        sx={{
+          flexGrow: 1,
+          height: "100%",
+          overflowY: "scroll",
+          "&::-webkit-scrollbar": { width: "8px" },
+          "&::-webkit-scrollbar-track": { background: "#f1f1f1" },
+          "&::-webkit-scrollbar-thumb": { background: "#888" },
+          "&::-webkit-scrollbar-thumb:hover": { background: "#555" },
+        }}
+      >
+        <MESSAGES messages={messages} selectedConversation={selectedConversation} setMessages={setMessages} />
+      </Box>
 
-          {/* <Footer /> */}
-          <form onSubmit={handleSubmit}>
+      {/* Chat footer */}
+      <form onSubmit={handleSubmit}>
+        <Box
+          p={2}
+          position={"relative"}
+          sx={{
+            height: 100,
+            width: "100%",
+            backgroundColor: theme.palette.mode === "light" ? "#F8FAFF" : theme.palette.background.paper,
+            boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
+          }}
+        >
+          <Stack direction={"row"} alignItems={"center"} spacing={3}>
+            <Stack sx={{ width: "100%" }}>
+              {/* Chat input */}
+              <StyledInput
+                placeholder={selectedFile ? selectedFile.name : "Send a message..."}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                InputProps={{
+                  disableUnderline: true,
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <IconButton component="label" htmlFor="fileInput">
+                        <LinkSimple />
+                        <input
+                          id="fileInput"
+                          type="file"
+                          onChange={handleFileSelect}
+                          style={{ display: "none" }}
+                        />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                        <Smiley />
+                      </IconButton>
+                      {showEmojiPicker && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            bottom: 80,
+                            right: 20,
+                            zIndex: 999,
+                          }}
+                        >
+                          <Picker theme={theme.palette.mode} data={data} onEmojiSelect={handleEmojiSelect} />
+                        </Box>
+                      )}
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Stack>
+
             <Box
-              p={2}
-              position={"relative"}
               sx={{
-                height: 100,
-                width: "100%",
-                backgroundColor:
-                  theme.palette.mode === "light"
-                    ? "#F8FAFF"
-                    : theme.palette.background.paper,
-                boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
+                height: 48,
+                width: 48,
+                backgroundColor: theme.palette.primary.main,
+                borderRadius: 1.5,
               }}
             >
-              <Stack direction={"row"} alignItems={"center"} spacing={3}>
-                <Stack sx={{ width: "100%" }}>
-                  {/* Chat input */}
-                  <StyledInput
-                    placeholder={
-                      selectedFile ? selectedFile.name : "Send a message..."
-                    }
-                    value={message}
-                    onChange={(e) => {
-                      if (e.target.value.length <= 5000) {
-                        setMessage(e.target.value);
-                      }
-                    }}
-                    InputProps={{
-                      disableUnderline: true,
-                      startAdornment: (
-                        <Stack sx={{ width: "max-content" }}>
-                          <InputAdornment>
-                            {/* Sử dụng IconButton để chọn file */}
-                            <IconButton
-                              component="label" // Sử dụng label element để làm điểm chính của IconButton
-                              htmlFor="fileInput" // Liên kết với input type file
-                              sx={{ display: "block" }}
-                            >
-                              <LinkSimple />
-                              <input
-                                id="fileInput"
-                                type="file"
-                                onChange={handleFileSelect}
-                                style={{ display: "none" }} // Ẩn input type file
-                              />
-                            </IconButton>
-                          </InputAdornment>
-                        </Stack>
-                      ),
-                      endAdornment: (
-                        <Stack sx={{ position: "relative" }}>
-                          <InputAdornment>
-                            <IconButton
-                              onClick={() =>
-                                setShowEmojiPicker(!showEmojiPicker)
-                              }
-                            >
-                              <Smiley />
-                            </IconButton>
-                            {showEmojiPicker && (
-                              <Box
-                                sx={{
-                                  position: "absolute",
-                                  bottom: 80,
-                                  right: 20,
-                                  zIndex: 999,
-                                }}
-                              >
-                                <Picker
-                                  theme={theme.palette.mode}
-                                  data={data}
-                                  onEmojiSelect={(emoji) => handleEmojiSelect(emoji)}
-                                />
-                              </Box>
-                            )}
-                          </InputAdornment>
-                        </Stack>
-                      ),
-                    }}
-                  // Nếu đã chọn file, không cho phép nhập vào input
-                  />
-                </Stack>
-
-                <Box
-                  sx={{
-                    height: 48,
-                    width: 48,
-                    backgroundColor: theme.palette.primary.main,
-                    borderRadius: 1.5,
-                  }}
-                >
-                  <Stack
-                    sx={{ height: "100%", width: "100%" }}
-                    alignItems={"center"}
-                    justifyContent={"center"}
-                  >
-                    {/* Submit send message */}
-                    <IconButton type="submit">
-                      <PaperPlaneTilt color="#fff" />
-                    </IconButton>
-                  </Stack>
-                </Box>
+              <Stack
+                sx={{ height: "100%", width: "100%" }}
+                alignItems={"center"}
+                justifyContent={"center"}
+              >
+                <IconButton type="submit">
+                  <PaperPlaneTilt color="#fff" />
+                </IconButton>
               </Stack>
             </Box>
-          </form>
-        </Stack>
-      )}
-    </>
+          </Stack>
+        </Box>
+      </form>
+    </Stack>
   );
 };
 
 const NoChatSelected = () => {
   return (
     <>
-      <Stack direction={"Column"} sx={{ width: "100%" }}>
+      <Stack
+        direction={"Column"}
+        justifyContent="center" // Canh giữa theo chiều dọc
+        alignItems="center"
+        sx={{ width: "100%" , mt: "10%" }}
+      >
+        <Chats size={200} />
         <Typography fontSize={60} variant="subtitle1" align="center" mt={2}>
           Welcome to Zano
         </Typography>
+
         <Typography fontSize={30} variant="body1" align="center" mt={2}>
           Select a chat to start messaging!
         </Typography>
@@ -411,7 +305,6 @@ const NoChatSelected = () => {
     </>
   );
 };
-
 const MESSAGES = ({ messages, selectedConversation, setMessages }) => {
   const timenow = new Intl.DateTimeFormat("en-US", {
     hour: "2-digit",

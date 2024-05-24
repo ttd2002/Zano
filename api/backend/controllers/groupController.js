@@ -129,7 +129,7 @@ const updateMember = async (req, res) => {
 
         if (members) {
             // Lọc ra những member chưa có trong participants
-            const newMembers = members.filter(memberId => 
+            const newMembers = members.filter(memberId =>
                 !conversation.participants.some(participant => participant._id.toString() === memberId)
             );
             const memberObjects = await Promise.all(newMembers.map(async memberId => {
@@ -223,7 +223,65 @@ const getGroupMessaged = async (req, res) => {
     }
 };
 
+const updateMemberWeb = async (req, res) => {
+    try {
+        const { members, admins, conversationId, } = req.body;
+        console.log('conversationId', conversationId);
+        console.log('admins', admins);
+        console.log('members', members);
+        // Tìm cuộc trò chuyện tương ứng
+        const conversation = await Conversation.findById(conversationId);
+        if (members) {
+            const memberObjects = await Promise.all(members.map(async memberId => {
+                const member = await User.findById(memberId); // Thay Member bằng tên model của thành viên
+                return member;
+            }));
+            conversation.participants = memberObjects
+        }
+        if (admins) {
+            const adminObjects = await Promise.all(admins.map(async adminId => {
+                const admin = await User.findById(adminId); // Thay Member bằng tên model của thành viên
+                return admin;
+            }));
+            conversation.listAdmins = adminObjects
+        }
+
+        // Nếu không tìm thấy cuộc trò chuyện
+        if (!conversation) {
+            return res.status(404).json({ message: "Conversation not found" });
+        }
+        // Gán mảng memberIdArray vào mảng participants của conversation
+
+
+        // Lưu lại cuộc trò chuyện đã cập nhật
+        const updatedConversation = await conversation.save();
+        console.log('updatedConversation', updatedConversation);
+        // Trả về phản hồi thành công
+        res.status(200).json({ message: "Members updated successfully", conversation: updatedConversation });
+    } catch (error) {
+        console.log("Error updating members:", error);
+        res.status(500).json({ message: "Failed to update members" });
+    }
+};
+
+const getMembersOfGroup = async (req, res) => {
+    const { conversationId } = req.params;
+  
+    try {
+      const conversation = await Conversation.findById(conversationId).populate('participants', "name phone avatar");
+  
+      if (!conversation) {
+        return res.status(404).json({ message: 'Conversation not found' });
+      }
+  
+      return res.status(200).json({ members: conversation.participants });
+    } catch (error) {
+      console.error('Error fetching members:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
 
 module.exports = {
-    createGroupApp, changeNameAvatar, removeMember, updateMember, removeGroupApp, getGroupMessaged,leaveGroupApp, changeLeaderApp
+    createGroupApp, changeNameAvatar, removeMember, updateMember, removeGroupApp, getGroupMessaged, leaveGroupApp, changeLeaderApp, updateMemberWeb,getMembersOfGroup
 };

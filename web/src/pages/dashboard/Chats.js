@@ -10,12 +10,14 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  Avatar,
 } from "@mui/material";
 import {
   ArchiveBox,
   CircleDashed,
   User,
   MagnifyingGlass,
+  UserPlus,
 } from "phosphor-react";
 import { useTheme } from "@mui/material/styles";
 import React, { useEffect, useState } from "react";
@@ -149,7 +151,7 @@ const Chats = () => {
                   handleOpenFriendDialog();
                 }}
               >
-                <User />
+                <UserPlus />
               </IconButton>
               <IconButton>
                 <CircleDashed />
@@ -294,10 +296,12 @@ const CreateGroup = ({ open, handleClose, onCreateConversation }) => {
         setListUser(response.data.friends); // Thêm .data để lấy dữ liệu từ response
         // console.log("listUser", response.data);
         MEMBERS = response.data.friends.map((user) => (
-          // name: user.name,
-          // phone: user.phone,
-          // avatar: user.avatar
-          user.name
+          {
+            name: user.name,
+            phone: user.phone,
+            avatar: user.avatar
+          }
+          // user.name
         ));
       } catch (error) {
         console.log("Error fetching user data", error);
@@ -337,7 +341,11 @@ const CreateGroup = ({ open, handleClose, onCreateConversation }) => {
     MEMBERS = listUser
       .filter((user) => !value.includes(user._id)) // Lọc ra các user chưa được chọn
       .map((user) => (
-        user.name));
+        {
+          name: user.name,
+          phone: user.phone,
+          avatar: user.avatar
+        }));
   };
 
   const onSubmit = async (data) => {
@@ -353,9 +361,8 @@ const CreateGroup = ({ open, handleClose, onCreateConversation }) => {
 
       // Lấy id của các user được chọn từ danh sách listUser
       const selectedMemberIds = listUser
-        .filter((user) => selectedMembers.includes(user.name))
-        .map((user) => user._id);
-
+        .filter((user) => selectedMembers.map((m) => m.name).includes(user.name))
+        .map((user) => user._id)
       selectedMemberIds.push(userId);
 
       // console.log("Selected Member IDs:", selectedMemberIds);
@@ -451,6 +458,13 @@ const CreateGroup = ({ open, handleClose, onCreateConversation }) => {
               multiple
               freeSolo
               options={MEMBERS}
+              getOptionLabel={(option) => option.name}
+              renderOption={(props, option) => (
+                <li {...props} style={{ gap: "5px" }}>
+                  <Avatar src={option.avatar} />
+                  <Typography>{option.name}</Typography>
+                </li>
+              )}
               value={watch("members")} // Lấy giá trị từ form
               onChange={handleAutocompleteChange}
               ChipProps={{ size: "medium" }}

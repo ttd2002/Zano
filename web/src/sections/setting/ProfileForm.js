@@ -41,15 +41,35 @@ const ProfileForm = () => {
     },
   });
   const { setValue, handleSubmit } = methods;
+
+
+  const formatDate = (date) => {
+    if (!date) return ""; // Trường hợp giá trị là null hoặc undefined
+    const parsedDate = new Date(date);
+    const day = parsedDate.getDate().toString().padStart(2, "0");
+    const month = (parsedDate.getMonth() + 1).toString().padStart(2, "0");
+    const year = parsedDate.getFullYear().toString();
+    return `${day}/${month}/${year}`;
+  };
+  const formatDateToISO = (date) => {
+    if (!date) return ""; // Trường hợp giá trị là null hoặc undefined
+    const parts = date.split("/");
+    const day = parts[0].padStart(2, "0");
+    const month = parts[1].padStart(2, "0");
+    const year = parts[2];
+    return `${year}-${month}-${day}`;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const data = await dispatch(fetchUserProfile());
+        const birthDate = formatDateToISO(data.payload.birthDate)
         setValue("avatar", data.payload.avatar);
         setValue("name", data.payload.name);
         setValue("gender", data.payload.gender);
         setGenderValue(data.payload.gender);
-        setValue("birthDate", data.payload.birthDate);
+        setValue("birthDate",birthDate);
         console.log("user data:", data.payload);
       } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -58,6 +78,7 @@ const ProfileForm = () => {
 
     fetchData();
   }, [dispatch, setValue]);
+
   const formData = new FormData();
   const handleDrop = useCallback(
     (acceptedFiles) => {
@@ -77,19 +98,21 @@ const ProfileForm = () => {
     },
     [setValue]
   );
+
+  
   const onSubmit = async (e) => {
     e.preventDefault();
-
+   
     const data = methods.getValues();
+    const birthDate = formatDate(data.birthDate);
     formData.append("name", data.name);
     formData.append("gender", data.gender);
-    formData.append("birthDate", data.birthDate);
+    formData.append("birthDate", birthDate);
     formData.append("avatar", data.avatar);
     // const formDataObject = Object.fromEntries(formData);
     // console.log("form data", formDataObject);
     try {
-      await updateUserProfile(formData, data, setLoading); // Gọi hàm updateUser với dữ liệu từ form
-      // Thực hiện các hành động sau khi update user thành công
+      await updateUserProfile(formData, data, setLoading); // Gọi hàm updateUser với dữ liệu từ form// Thực hiện các hành động sau khi update user thành công
       dispatch(fetchUserProfile());
     } catch (error) {
       // Xử lý lỗi nếu có
@@ -156,7 +179,7 @@ const ProfileForm = () => {
             </FormControl>
 
             {/*Birth day*/}
-            <Typography>Birth date (M/D/Y):</Typography>
+            <Typography>Birth date :</Typography>
             <RHFText name="birthDate" type="date" />
           </Stack>
           <Stack direction={"row"} justifyContent={"end"}>

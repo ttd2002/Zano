@@ -85,21 +85,29 @@ const RegisterForm = () => {
   const { signup } = useSignup(navigate);
   const formData = new FormData();
 
+  const formatDate = (date) => {
+    if (!date) return ""; // Trường hợp giá trị là null hoặc undefined
+    const parsedDate = new Date(date);
+    const day = parsedDate.getDate().toString().padStart(2, "0");
+    const month = (parsedDate.getMonth() + 1).toString().padStart(2, "0");
+    const year = parsedDate.getFullYear().toString();
+    return `${day}/${month}/${year}`;
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const birthDate = formatDate(inputs.birthDate);
     formData.append("name", inputs.name);
     formData.append("phone", inputs.phone);
     formData.append("password", inputs.password);
     formData.append("confirmPassword", inputs.confirmPassword);
     formData.append("gender", inputs.gender);
-    formData.append("birthDate", inputs.birthDate);
+    formData.append("birthDate", birthDate);
     formData.append("avatar", file);
     // const formDataObject = Object.fromEntries(formData);
     // console.log("form data", formDataObject);
     // console.log("avatarPreview", avatarPreview);
     await signup({ formData });
   };
-
   return (
     <FormProvider methods={methods} onSubmit={handleSubmit}>
       <Stack spacing={3}>

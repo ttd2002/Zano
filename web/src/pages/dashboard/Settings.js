@@ -15,6 +15,7 @@ import {
 import {
   Bell,
   CaretLeft,
+  Chats,
   Image,
   Info,
   Key,
@@ -27,7 +28,9 @@ import React from "react";
 import Shortcuts from "../../sections/setting/Shortcuts";
 import { useState } from "react";
 import ChangePassword from "./setting/changePassword";
+import { useNavigate } from "react-router-dom";
 const Settings = () => {
+  const navigate = useNavigate();
   const theme = useTheme();
   const [openShortcuts, setOpenShortcuts] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
@@ -104,7 +107,7 @@ const Settings = () => {
         {/* LeftPanel */}
         <Box
           sx={{
-            overflowY: "scroll",
+            overflowY: "hidden",
             height: "100vh",
             width: 310,
             backgroundColor:
@@ -117,8 +120,10 @@ const Settings = () => {
           <Stack p={4} spacing={5}>
             {/* Header */}
             <Stack direction={"row"} alignItems={"center"} spacing={3}>
-              <IconButton onClick={1}>
-                <CaretLeft size={25} colorRendering={"#4B4B4B"} />
+            <IconButton >
+                <CaretLeft size={25} colorRendering={"#4B4B4B"} onClick={() => {
+                    navigate("/app");
+                  }} />
               </IconButton>
               <Typography variant="H6">SETTINGS</Typography>
             </Stack>
@@ -158,6 +163,29 @@ const Settings = () => {
           </Stack>
         </Box>
         {/* RightPanel */}
+        <Box
+          sx={{
+            flex: 1, /* Chiếm toàn bộ không gian còn lại */
+            backgroundColor: (theme) =>
+              theme.palette.mode === "light"
+                ? "#FFF"
+                : theme.palette.background.paper,
+          }}
+        >
+           <Stack
+        direction={"Column"}
+        justifyContent="center" // Canh giữa theo chiều dọc
+        alignItems="center"
+        sx={{ width: "100%" , mt: "10%" }}
+      >
+        <Chats size={200} />
+        <Typography fontSize={60} variant="subtitle1" align="center" mt={2}>
+          Welcome to Zano
+        </Typography>
+
+      </Stack>
+        </Box>
+
       </Stack>
       {openShortcuts && (
         <Shortcuts open={openShortcuts} handleClose={handleCloseShortcuts} />

@@ -92,7 +92,8 @@ const Friend = () => {
       Alert.alert(error.response?.data?.error || 'Failed to unfriend user');
     }
   };
-  console.log(`http://${ipAddress}:3000/users/app/handleUnfriendUser`);
+  // console.log(`http://${ipAddress}:3000/users/app/handleUnfriendUser`);
+  console.log(friends);
   return (
     <View style={styles.container}>
       <ScrollView style={{ width: '100%' }}>
@@ -156,7 +157,7 @@ const Friend = () => {
                 {group.map((item, subIndex) => (
                   <View key={subIndex} style={{ width: '100%', height: 'auto', backgroundColor: 'white', padding: 15, marginTop: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={{ uri: avatar ? avatar : 'https://phongreviews.com/wp-content/uploads/2022/11/avatar-facebook-mac-dinh-15.jpg' }} />
+                      <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={{ uri: item.avatar ? item.avatar : 'https://phongreviews.com/wp-content/uploads/2022/11/avatar-facebook-mac-dinh-15.jpg' }} />
                       <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '50%' }}>{item.name}</Text>
                       <TouchableOpacity style={{backgroundColor:'red', padding:6, borderRadius:10}}
                         onPress={() => {

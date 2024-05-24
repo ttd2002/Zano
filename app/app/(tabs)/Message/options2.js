@@ -260,7 +260,7 @@ const Options2 = ({ type, conversation, userId }) => {
                             <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '65%' }}>{item.name} {item._id === conversation.leader ? ' (Trưởng nhóm)' : conversation.listAdmins.includes(item._id) ? ' (Phó nhóm)' : ''}</Text>
 
                             <View style={styles.section}>
-                                {userId === conversation.leader ? (
+                                {userId === conversation.leader && item._id!==userId ? (
                                     <TouchableOpacity
                                         onPress={() => {
                                             handleDeleteMember(item._id);
@@ -353,11 +353,12 @@ const Options2 = ({ type, conversation, userId }) => {
                                 <Image style={{ width: 50, height: 50, borderRadius: 60, borderWidth: 2, borderColor: 'black' }} source={{ uri: item.avatar ? item.avatar : 'https://phongreviews.com/wp-content/uploads/2022/11/avatar-facebook-mac-dinh-15.jpg' }} />
                                 <Text style={{ fontWeight: '500', fontSize: 18, marginLeft: 10, width: '65%' }}>{item.name}</Text>
                                 <View style={styles.section}>
-                                    <Checkbox
+                                    {item._id !== userId && (<Checkbox
                                         style={styles.checkbox}
                                         value={dataFinal.includes(item._id)}
                                         onValueChange={() => handleCheckboxChange(item._id)}
-                                    />
+                                    />)}
+
                                 </View>
                             </View>
                         </View>

@@ -35,21 +35,62 @@ import MessageContainer from "../../components/Conversation/MessageContainer";
 // danh sách bạn bè
 const FriendsList = ({ onHandleAddfriend, listFriend, setListFriend }) => {
   const handleAddToGroup = (user) => {
-    console.log("Selected user:", user);
-    console.log("friends:", listFriend);
     // Gọi hàm onHandleAddfriend và truyền vào user-----
     onHandleAddfriend(user);
-    setListFriend((prevList) => prevList.filter((friend) => friend._id !== user._id));
-
+    setListFriend(listFriend.filter((friend) => friend._id !== user._id));
+    // fetchFriend();
   };
+  const { selectedConversation, socket } = useConversation();
+  const senderId = localStorage.getItem("loginId");
+
+  const fetchFriend = async () => {
+    try {
+      const response = await axios.get(`/users/${senderId}/friends`);
+      const friends = response.data.friends;
+
+      // Lấy danh sách _id của các participants trong selectedConversation
+      const participantIds = selectedConversation.participants.map(participant => participant._id);
+
+      // Lọc bỏ những bạn bè đã là thành viên của selectedConversation
+      const filteredFriends = friends.filter(friend => !participantIds.includes(friend._id));
+
+      setListFriend(filteredFriends);
+      console.log("listFriend after add");
+    } catch (error) {
+      console.log("Error fetching friends", error);
+    }
+  };
+  useEffect(() => {
+    fetchFriend();
+  }, []);
+
+  // useEffect(() => {
+  //   if (!socket) return;
+  //   socket.on("Render", () => {
+  //     fetchFriend();
+  //   });
+  //   return () => {
+  //     socket.off("Render");
+  //   }
+  // }, [socket]);
+
   const [searchTerm, setSearchTerm] = useState("");
+  // const filteredUserList = Array.isArray(listFriend)
+  //   ? listFriend.filter(
+  //     (user) =>
+  //       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       user.phone.toLowerCase().includes(searchTerm.toLowerCase())
+  //   )
+  //   : [];
   const filteredUserList = Array.isArray(listFriend)
-    ? listFriend.filter(
-      (user) =>
+    ? listFriend.filter(user =>
+      (user && user.name && user.phone) ? (
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.phone.toLowerCase().includes(searchTerm.toLowerCase())
+      ) : false
     )
     : [];
+
   return (
     <>
       <TextField
@@ -95,7 +136,7 @@ const FriendsList = ({ onHandleAddfriend, listFriend, setListFriend }) => {
               <Button
                 variant="contained"
                 style={{ backgroundColor: "#aaaaaa", color: "black" }}
-                onClick={() => handleAddToGroup(user._id)}
+                onClick={() => handleAddToGroup(user)}
               >
                 Add to group
               </Button>
@@ -118,7 +159,7 @@ const MembersManagement = ({
     return <Slide direction="up" ref={ref} {...props} />;
   });
   const [isLeaveGroup, setIsLeaveGroup] = useState(false);
-  const { selectedConversation, socket } = useConversation();
+  const { selectedConversation, setSelectedConversation, socket } = useConversation();
   const loggedInUserId = localStorage.getItem("loginId");
   const listAdmins = selectedConversation.listAdmins;
   const leaderId = selectedConversation.leader;
@@ -137,6 +178,7 @@ const MembersManagement = ({
       if (response.status === 200) {
         toast.success("Conversation deleted successfully.");
         socket.emit("requestRender");//-----------
+        setSelectedConversation(null);
         handleClose();
         // setIsLeaveGroup(true);
         // return (<MessageContainer isLeaveGroup={true} />);
@@ -163,6 +205,7 @@ const MembersManagement = ({
       if (response.status === 200) {
         toast.success("You have exited the conversation.");
         socket.emit("requestRender");//-----------
+        setSelectedConversation(null);
         handleClose();
         // setIsLeaveGroup(true);
         // return (<MessageContainer isLeaveGroup={true} />);
@@ -174,11 +217,19 @@ const MembersManagement = ({
     }
   };
 
+  // const filteredMemberList = Array.isArray(listMembers)
+  //   ? listMembers.filter(
+  //     (user) =>
+  //       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       user.phone.toLowerCase().includes(searchTerm.toLowerCase())
+  //   )
+  //   : [];
   const filteredMemberList = Array.isArray(listMembers)
-    ? listMembers.filter(
-      (user) =>
+    ? listMembers.filter(user =>
+      (user && user.name && user.phone) ? (
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.phone.toLowerCase().includes(searchTerm.toLowerCase())
+      ) : false
     )
     : [];
 
@@ -413,12 +464,11 @@ const Members = ({
   isCreateConversation,
   setIsCreateConversation,
 }) => {
-  const { selectedConversation, setSelectedConversation } = useConversation();
+  const { selectedConversation, setSelectedConversation, socket } = useConversation();
   const [value, setValue] = useState(0);
   const [friendKey, setFriendKey] = useState(0);
   const [membersKey, setMembersKey] = useState(0);
   const dispatch = useDispatch();
-  const { socket } = useConversation();
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
@@ -429,18 +479,34 @@ const Members = ({
   const senderId = localStorage.getItem("loginId");
 
   useEffect(() => {
+    if (!selectedConversation) return;
+
     fetchFriend();
-  }, []);
+    fetchMember();
+  }, [selectedConversation]);
 
   useEffect(() => {
     fetchFriend();
-    console.log("render friend list");
-  }, [friendKey, selectedConversation]);
+    fetchMember();
+  }, []);
+
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on("Render", () => {
+      fetchMember();
+      console.log("*******")
+    });
+    return () => {
+      socket.off("Render");
+    }
+  }, [socket]);
 
   useEffect(() => {
     // Update key khi danh sách thành viên thay đổi
     setMembersKey((prevKey) => prevKey + 1);
   }, [listMembers]);
+
 
   const fetchFriend = async () => {
     try {
@@ -459,6 +525,18 @@ const Members = ({
     }
   };
 
+  const fetchMember = async () => {
+    try {
+      console.log("Fetching members for conversation ID:", selectedConversation._id);
+      const response = await axios.get(`/group/conversation/getMembersOfGroup/${selectedConversation._id}`);
+      const members = response.data.members;
+      console.log("Fetched members:", members);
+      setListMembers([...members]);
+    } catch (error) {
+      console.log("Error fetching member", error);
+    }
+  };
+
   // Trong handleAddFriendToGroup
   const handleAddFriendToGroup = async (user) => {
     const isUserInGroup = selectedConversation.participants.some(
@@ -473,7 +551,7 @@ const Members = ({
     const confirmAdd = window.confirm("Add this friend to the group?");
     if (confirmAdd) {
       try {
-        const response = await axios.put("/group/conversation/updateMember", {
+        const response = await axios.put("/group/conversation/updateMemberWeb", {
           conversationId: selectedConversation._id,
           members: [...selectedConversation.participants, user],
         });
@@ -483,9 +561,11 @@ const Members = ({
 
           // Cập nhật friendKey để kích hoạt useEffect làm mới danh sách bạn bè
           setFriendKey((prevKey) => prevKey + 1);
-
+          // fetchFriend();
           // Thêm user vào danh sách thành viên của nhóm
-          setListMembers((prevList) => [...prevList, user]);
+          const updatedParticipants = [...response.data.conversation.participants];
+          setSelectedConversation({ ...selectedConversation, participants: updatedParticipants });
+          setListMembers(updatedParticipants);
           socket.emit("requestRender");//-----------
         } else {
           toast.error("Error adding friend to group.");
@@ -502,14 +582,29 @@ const Members = ({
     const confirmAdd = window.confirm("Add this member as an admin?");
     if (confirmAdd) {
       try {
-        const response = await axios.put("/group/conversation/updateMember", {
+        const response = await axios.put("/group/conversation/updateMemberWeb", {
           conversationId: selectedConversation._id,
-          admins: [...selectedConversation.listAdmins, userId], // Truyền userId vào mảng admins
+          admins: [...selectedConversation.listAdmins, userId],
         });
-
+  
         if (response.status === 200) {
           toast.success("Member added as admin successfully.");
-          // Nếu cần, có thể cập nhật danh sách admin ở đây
+  
+          // Cập nhật danh sách thành viên với vai trò admin mới
+          const updatedParticipants = response.data.conversation.participants;
+          const updatedListAdmins = response.data.conversation.listAdmins;
+  
+          // setSelectedConversation({
+          //   ...selectedConversation,
+          //   participants: updatedParticipants,
+          //   listAdmins: updatedListAdmins,
+          // });
+  
+          // Cập nhật danh sách thành viên hiển thị
+          setListMembers(updatedParticipants);
+  
+          // Kích hoạt request render để cập nhật giao diện
+          socket.emit("requestRender");
         } else {
           toast.error("Error adding member as admin.");
         }
@@ -518,33 +613,34 @@ const Members = ({
       }
     }
   };
-  //
+  
+
   const handleDemoteGroupAdmin = async (userId) => {
-    const confirmAdd = window.confirm("Remove this admin?");
-    if (confirmAdd) {
+    const confirmRemove = window.confirm("Remove this admin?");
+    if (confirmRemove) {
       try {
-        const response = await axios.put("/group/conversation/updateMember", {
+        const response = await axios.put("/group/conversation/updateMemberWeb", {
           conversationId: selectedConversation._id,
-          admins: selectedConversation.listAdmins.filter(id => id !== userId), // Truyền userId vào mảng admins
+          admins: selectedConversation.listAdmins.filter(id => id !== userId),
         });
 
         if (response.status === 200) {
-          toast.success("Member added as admin successfully.");
-          // Nếu cần, có thể cập nhật danh sách admin ở đây
+          toast.success("Admin removed successfully.");
+          setListMembers(response.data.conversation.participants);
+          socket.emit("requestRender");
         } else {
-          toast.error("Error adding member as admin.");
+          toast.error("Error removing admin.");
         }
       } catch (error) {
-        console.log("Error adding member as admin", error);
+        console.log("Error removing admin", error);
       }
     }
   };
-  // Trong handlePromoteGroupLeader
+
   const handlePromoteGroupLeader = async (userId) => {
     const confirmPromote = window.confirm("Promote this member as leader?");
     if (confirmPromote) {
       try {
-        // Gọi API updateMember với conversationId là selectedConversation._id, members và admins
         const response = await axios.put("/group/conversation/changeLeader", {
           conversationId: selectedConversation._id,
           memberId: userId,
@@ -552,6 +648,8 @@ const Members = ({
 
         if (response.status === 200) {
           toast.success("Admin promoted as leader successfully.");
+          setListMembers(response.data.conversation.participants);
+          socket.emit("requestRender");
         } else {
           toast.error("Error promoting member as leader.");
         }
@@ -560,31 +658,24 @@ const Members = ({
       }
     }
   };
+
   const handleRemoveMember = async (userId) => {
     const confirmRemove = window.confirm("Remove member from group?");
     if (confirmRemove) {
       try {
-        // Gọi API removeMember với memberId là userId và conversationId là selectedConversation._id
         const response = await axios.put("/group/conversation/leave", {
           senderId: userId,
           conversationId: selectedConversation._id,
         });
 
         if (response.status === 200) {
-          // Loại bỏ người dùng khỏi danh sách thành viên
-          setListMembers((prevList) =>
-            prevList.filter((user) => user._id !== userId)
-          );
-
-          // Thêm user vào danh sách bạn bè
-          setListFriend((prevList) => [...prevList, { _id: userId }]);
-
-          // Hiển thị thông báo thành công
+          const updatedParticipants = selectedConversation.participants.filter(user => user._id !== userId);
+          setSelectedConversation({ ...selectedConversation, participants: updatedParticipants });
+          setListMembers(updatedParticipants);
+          setListFriend(prevList => [...prevList, { _id: userId }]);
           toast.success("Member removed successfully.");
-          socket.emit("requestRender");//-----------
-          setSelectedConversation(null);
+          socket.emit("requestRender");
         } else {
-          // Hiển thị thông báo lỗi nếu yêu cầu không thành công
           toast.error("Error removing member");
         }
       } catch (error) {
@@ -642,6 +733,7 @@ const Members = ({
                         onHandleAddGroupAdmin={handleAddGroupAdmin}
                         onHandlePromoteToLeader={handlePromoteGroupLeader}
                         onHandleDemoteAdmin={handleDemoteGroupAdmin}
+                        handleClose={handleClose}
                       />
                     );
 

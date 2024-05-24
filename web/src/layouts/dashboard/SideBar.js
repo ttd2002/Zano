@@ -155,7 +155,7 @@ const SideBar = () => {
               )
             )}
             <Divider sx={{ width: "48" }} />
-            {selected === 2 ? (
+            {/* {selected === 2 ? (
               <Box
                 p={1}
                 sx={{
@@ -183,7 +183,7 @@ const SideBar = () => {
               >
                 <Gear />
               </IconButton>
-            )}
+            )} */}
           </Stack>
         </Stack>
         <Stack spacing={4}>

@@ -1060,11 +1060,11 @@ declare class Glue extends Service {
    */
   getUnfilteredPartitionsMetadata(callback?: (err: AWSError, data: Glue.Types.GetUnfilteredPartitionsMetadataResponse) => void): Request<Glue.Types.GetUnfilteredPartitionsMetadataResponse, AWSError>;
   /**
-   * Retrieves table metadata from the Data Catalog that contains unfiltered metadata. For IAM authorization, the public IAM action associated with this API is glue:GetTable.
+   * Allows a third-party analytical engine to retrieve unfiltered table metadata from the Data Catalog. For IAM authorization, the public IAM action associated with this API is glue:GetTable.
    */
   getUnfilteredTableMetadata(params: Glue.Types.GetUnfilteredTableMetadataRequest, callback?: (err: AWSError, data: Glue.Types.GetUnfilteredTableMetadataResponse) => void): Request<Glue.Types.GetUnfilteredTableMetadataResponse, AWSError>;
   /**
-   * Retrieves table metadata from the Data Catalog that contains unfiltered metadata. For IAM authorization, the public IAM action associated with this API is glue:GetTable.
+   * Allows a third-party analytical engine to retrieve unfiltered table metadata from the Data Catalog. For IAM authorization, the public IAM action associated with this API is glue:GetTable.
    */
   getUnfilteredTableMetadata(callback?: (err: AWSError, data: Glue.Types.GetUnfilteredTableMetadataResponse) => void): Request<Glue.Types.GetUnfilteredTableMetadataResponse, AWSError>;
   /**
@@ -4344,6 +4344,10 @@ declare namespace Glue {
      * The details for a source control configuration for a job, allowing synchronization of job artifacts to or from a remote repository.
      */
     SourceControlDetails?: SourceControlDetails;
+    /**
+     * This field specifies a day of the week and hour for a maintenance window for streaming jobs. Glue periodically performs maintenance activities. During these maintenance windows, Glue will need to restart your streaming jobs. Glue will restart the job within 3 hours of the specified maintenance window. For instance, if you set up the maintenance window for Monday at 10:00AM GMT, your jobs will be restarted between 10:00AM GMT to 1:00PM GMT.
+     */
+    MaintenanceWindow?: MaintenanceWindow;
   }
   export interface CreateJobResponse {
     /**
@@ -8292,9 +8296,17 @@ declare namespace Glue {
      */
     AuditContext?: AuditContext;
     /**
-     * (Required) A list of supported permission types. 
+     * Indicates the level of filtering a third-party analytical engine is capable of enforcing when calling the GetUnfilteredTableMetadata API operation. Accepted values are:    COLUMN_PERMISSION - Column permissions ensure that users can access only specific columns in the table. If there are particular columns contain sensitive data, data lake administrators can define column filters that exclude access to specific columns.    CELL_FILTER_PERMISSION - Cell-level filtering combines column filtering (include or exclude columns) and row filter expressions to restrict access to individual elements in the table.    NESTED_PERMISSION - Nested permissions combines cell-level filtering and nested column filtering to restrict access to columns and/or nested columns in specific rows based on row filter expressions.    NESTED_CELL_PERMISSION - Nested cell permissions combines nested permission with nested cell-level filtering. This allows different subsets of nested columns to be restricted based on an array of row filter expressions.    Note: Each of these permission types follows a hierarchical order where each subsequent permission type includes all permission of the previous type. Important: If you provide a supported permission type that doesn't match the user's level of permissions on the table, then Lake Formation raises an exception. For example, if the third-party engine calling the GetUnfilteredTableMetadata operation can enforce only column-level filtering, and the user has nested cell filtering applied on the table, Lake Formation throws an exception, and will not return unfiltered table metadata and data access credentials.
      */
     SupportedPermissionTypes: PermissionTypeList;
+    /**
+     * The resource ARN of the view.
+     */
+    ParentResourceArn?: ArnString;
+    /**
+     * The resource ARN of the root view in a chain of nested views.
+     */
+    RootResourceArn?: ArnString;
     /**
      * A structure specifying the dialect and dialect version used by the query engine.
      */
@@ -8345,6 +8357,10 @@ declare namespace Glue {
      * The Lake Formation data permissions of the caller on the table. Used to authorize the call when no view context is found.
      */
     Permissions?: PermissionList;
+    /**
+     * The filter that applies to the table. For example when applying the filter in SQL, it would go in the WHERE clause and can be evaluated by using an AND operator with any other predicates applied by the user querying the table.
+     */
+    RowFilter?: PredicateString;
   }
   export interface GetUserDefinedFunctionRequest {
     /**
@@ -8916,6 +8932,10 @@ declare namespace Glue {
      * The details for a source control configuration for a job, allowing synchronization of job artifacts to or from a remote repository.
      */
     SourceControlDetails?: SourceControlDetails;
+    /**
+     * This field specifies a day of the week and hour for a maintenance window for streaming jobs. Glue periodically performs maintenance activities. During these maintenance windows, Glue will need to restart your streaming jobs. Glue will restart the job within 3 hours of the specified maintenance window. For instance, if you set up the maintenance window for Monday at 10:00AM GMT, your jobs will be restarted between 10:00AM GMT to 1:00PM GMT.
+     */
+    MaintenanceWindow?: MaintenanceWindow;
   }
   export interface JobBookmarkEntry {
     /**
@@ -9043,7 +9063,7 @@ declare namespace Glue {
      */
     ExecutionTime?: ExecutionTime;
     /**
-     * The JobRun timeout in minutes. This is the maximum time that a job run can consume resources before it is terminated and enters TIMEOUT status. This value overrides the timeout value set in the parent job. Streaming jobs do not have a timeout. The default for non-streaming jobs is 2,880 minutes (48 hours).
+     * The JobRun timeout in minutes. This is the maximum time that a job run can consume resources before it is terminated and enters TIMEOUT status. This value overrides the timeout value set in the parent job. The maximum value for timeout for batch jobs is 7 days or 10080 minutes. The default is 2880 minutes (48 hours) for batch jobs. Any existing Glue jobs that have a greater timeout value are defaulted to 7 days. For instance you have specified a timeout of 20 days for a batch job, it will be stopped on the 7th day. Streaming jobs must have timeout values less than 7 days or 10080 minutes. When the value is left blank, the job will be restarted after 7 days based if you have not setup a maintenance window. If you have setup maintenance window, it will be restarted during the maintenance window after 7 days.
      */
     Timeout?: Timeout;
     /**
@@ -9075,16 +9095,20 @@ declare namespace Glue {
      */
     GlueVersion?: GlueVersionString;
     /**
-     * This field populates only for Auto Scaling job runs, and represents the total time each executor ran during the lifecycle of a job run in seconds, multiplied by a DPU factor (1 for G.1X, 2 for G.2X, or 0.25 for G.025X workers). This value may be different than the executionEngineRuntime * MaxCapacity as in the case of Auto Scaling jobs, as the number of executors running at a given time may be less than the MaxCapacity. Therefore, it is possible that the value of DPUSeconds is less than executionEngineRuntime * MaxCapacity.
+     * This field can be set for either job runs with execution class FLEX or when Auto Scaling is enabled, and represents the total time each executor ran during the lifecycle of a job run in seconds, multiplied by a DPU factor (1 for G.1X, 2 for G.2X, or 0.25 for G.025X workers). This value may be different than the executionEngineRuntime * MaxCapacity as in the case of Auto Scaling jobs, as the number of executors running at a given time may be less than the MaxCapacity. Therefore, it is possible that the value of DPUSeconds is less than executionEngineRuntime * MaxCapacity.
      */
     DPUSeconds?: NullableDouble;
     /**
      * Indicates whether the job is run with a standard or flexible execution class. The standard execution-class is ideal for time-sensitive workloads that require fast job startup and dedicated resources. The flexible execution class is appropriate for time-insensitive jobs whose start and completion times may vary.  Only jobs with Glue version 3.0 and above and command type glueetl will be allowed to set ExecutionClass to FLEX. The flexible execution class is available for Spark jobs.
      */
     ExecutionClass?: ExecutionClass;
+    /**
+     * This field specifies a day of the week and hour for a maintenance window for streaming jobs. Glue periodically performs maintenance activities. During these maintenance windows, Glue will need to restart your streaming jobs. Glue will restart the job within 3 hours of the specified maintenance window. For instance, if you set up the maintenance window for Monday at 10:00AM GMT, your jobs will be restarted between 10:00AM GMT to 1:00PM GMT.
+     */
+    MaintenanceWindow?: MaintenanceWindow;
   }
   export type JobRunList = JobRun[];
-  export type JobRunState = "STARTING"|"RUNNING"|"STOPPING"|"STOPPED"|"SUCCEEDED"|"FAILED"|"TIMEOUT"|"ERROR"|"WAITING"|string;
+  export type JobRunState = "STARTING"|"RUNNING"|"STOPPING"|"STOPPED"|"SUCCEEDED"|"FAILED"|"TIMEOUT"|"ERROR"|"WAITING"|"EXPIRED"|string;
   export interface JobUpdate {
     /**
      * Description of the job being defined.
@@ -9166,6 +9190,10 @@ declare namespace Glue {
      * The details for a source control configuration for a job, allowing synchronization of job artifacts to or from a remote repository.
      */
     SourceControlDetails?: SourceControlDetails;
+    /**
+     * This field specifies a day of the week and hour for a maintenance window for streaming jobs. Glue periodically performs maintenance activities. During these maintenance windows, Glue will need to restart your streaming jobs. Glue will restart the job within 3 hours of the specified maintenance window. For instance, if you set up the maintenance window for Monday at 10:00AM GMT, your jobs will be restarted between 10:00AM GMT to 1:00PM GMT.
+     */
+    MaintenanceWindow?: MaintenanceWindow;
   }
   export interface Join {
     /**
@@ -9334,11 +9362,11 @@ declare namespace Glue {
      */
     StartingPosition?: StartingPosition;
     /**
-     * The maximum time spent in the job executor to fetch a record from the Kinesis data stream per shard, specified in milliseconds (ms). The default value is 1000.
+     * The maximum time spent for the job executor to read records for the current batch from the Kinesis data stream, specified in milliseconds (ms). Multiple GetRecords API calls may be made within this time. The default value is 1000.
      */
     MaxFetchTimeInMs?: BoxedNonNegativeLong;
     /**
-     * The maximum number of records to fetch per shard in the Kinesis data stream. The default value is 100000.
+     * The maximum number of records to fetch per shard in the Kinesis data stream per microbatch. Note: The client can exceed this limit if the streaming job has already read extra records from Kinesis (in the same get-records call). If MaxFetchRecordsPerShard needs to be strict then it needs to be a multiple of MaxRecordPerRead. The default value is 100000.
      */
     MaxFetchRecordsPerShard?: BoxedNonNegativeLong;
     /**
@@ -10126,6 +10154,7 @@ declare namespace Glue {
     KmsKeyId?: NameString;
   }
   export type MLUserDataEncryptionModeString = "DISABLED"|"SSE-KMS"|string;
+  export type MaintenanceWindow = string;
   export type ManyInputs = NodeId[];
   export type MapValue = {[key: string]: GenericString};
   export interface Mapping {

@@ -1,2 +1,2 @@
-const ipAddress='192.168.153.173';
+const ipAddress='192.168.232.1';
 export {ipAddress};

@@ -132,14 +132,14 @@ const MessageContainer = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!message && !selectedFile) return;
+    // if (!message && !selectedFile) return;
     if (message.trim() == "") return;
     if (!selectedConversation) {
       console.log("Không có cuộc trò chuyện nào được chọn");
       return;
     }
-    // console.log("Sending message:", message);
-
+    console.log("Sending message:", message);
+    console.log(selectedFile);
     try {
       if (selectedFile && message.trim() == "") {
         const image = new FormData();

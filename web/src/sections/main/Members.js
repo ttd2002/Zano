@@ -35,13 +35,41 @@ import MessageContainer from "../../components/Conversation/MessageContainer";
 // danh sách bạn bè
 const FriendsList = ({ onHandleAddfriend, listFriend, setListFriend }) => {
   const handleAddToGroup = (user) => {
-    console.log("Selected user:", user);
-    console.log("friends:", listFriend);
     // Gọi hàm onHandleAddfriend và truyền vào user-----
     onHandleAddfriend(user);
-    setListFriend((prevList) => prevList.filter((friend) => friend._id !== user._id));
-
+    setListFriend(listFriend.filter((friend) => friend._id !== user._id));
+    // fetchFriend();
   };
+  const { selectedConversation, socket } = useConversation();
+  const senderId = localStorage.getItem("loginId");
+
+  const fetchFriend = async () => {
+    try {
+      const response = await axios.get(`/users/${senderId}/friends`);
+      const friends = response.data.friends;
+
+      // Lấy danh sách _id của các participants trong selectedConversation
+      const participantIds = selectedConversation.participants.map(participant => participant._id);
+
+      // Lọc bỏ những bạn bè đã là thành viên của selectedConversation
+      const filteredFriends = friends.filter(friend => !participantIds.includes(friend._id));
+
+      setListFriend(filteredFriends);
+      console.log("listFriend after add");
+    } catch (error) {
+      console.log("Error fetching friends", error);
+    }
+  };
+  // useEffect(() => {
+  //   if (!socket) return;
+  //   socket.on("Render", () => {
+  //     fetchFriend();
+  //   });
+  //   return () => {
+  //     socket.off("Render");
+  //   }
+  // }, [socket]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const filteredUserList = Array.isArray(listFriend)
     ? listFriend.filter(
@@ -95,7 +123,7 @@ const FriendsList = ({ onHandleAddfriend, listFriend, setListFriend }) => {
               <Button
                 variant="contained"
                 style={{ backgroundColor: "#aaaaaa", color: "black" }}
-                onClick={() => handleAddToGroup(user._id)}
+                onClick={() => handleAddToGroup(user)}
               >
                 Add to group
               </Button>
@@ -413,12 +441,11 @@ const Members = ({
   isCreateConversation,
   setIsCreateConversation,
 }) => {
-  const { selectedConversation, setSelectedConversation } = useConversation();
+  const { selectedConversation, setSelectedConversation, socket } = useConversation();
   const [value, setValue] = useState(0);
   const [friendKey, setFriendKey] = useState(0);
   const [membersKey, setMembersKey] = useState(0);
   const dispatch = useDispatch();
-  const { socket } = useConversation();
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
@@ -431,11 +458,6 @@ const Members = ({
   useEffect(() => {
     fetchFriend();
   }, []);
-
-  useEffect(() => {
-    fetchFriend();
-    console.log("render friend list");
-  }, [friendKey, selectedConversation]);
 
   useEffect(() => {
     // Update key khi danh sách thành viên thay đổi
@@ -483,9 +505,11 @@ const Members = ({
 
           // Cập nhật friendKey để kích hoạt useEffect làm mới danh sách bạn bè
           setFriendKey((prevKey) => prevKey + 1);
-
+          // fetchFriend();
           // Thêm user vào danh sách thành viên của nhóm
-          setListMembers((prevList) => [...prevList, user]);
+          const updatedParticipants = [...selectedConversation.participants, user];
+          setSelectedConversation({ ...selectedConversation, participants: updatedParticipants });
+          setListMembers(updatedParticipants);
           socket.emit("requestRender");//-----------
         } else {
           toast.error("Error adding friend to group.");
@@ -572,11 +596,9 @@ const Members = ({
 
         if (response.status === 200) {
           // Loại bỏ người dùng khỏi danh sách thành viên
-          setListMembers((prevList) =>
-            prevList.filter((user) => user._id !== userId)
-          );
-
-          // Thêm user vào danh sách bạn bè
+          const updatedParticipants = selectedConversation.participants.filter(user => user._id !== userId);
+          setSelectedConversation({ ...selectedConversation, participants: updatedParticipants });
+          setListMembers(updatedParticipants);
           setListFriend((prevList) => [...prevList, { _id: userId }]);
 
           // Hiển thị thông báo thành công
@@ -642,6 +664,7 @@ const Members = ({
                         onHandleAddGroupAdmin={handleAddGroupAdmin}
                         onHandlePromoteToLeader={handlePromoteGroupLeader}
                         onHandleDemoteAdmin={handleDemoteGroupAdmin}
+                        handleClose={handleClose}
                       />
                     );
 

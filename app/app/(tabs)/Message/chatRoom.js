@@ -548,8 +548,8 @@ const chatRoom = () => {
             ></UploadModal>
             <View style={{ backgroundColor: '#00abf6', justifyContent: 'flex-start', alignItems: 'center', flexDirection: "row", alignItems: "center", gap: 10, height: 50 }}>
                 <TouchableOpacity style={{ marginLeft: 10 }} onPress={() => { 
-                    // router.replace('/Message') 
-                    navigation.goBack()
+                    router.replace('/Message') 
+                    // navigation.goBack()
                     }}>
                     <Ionicons name="chevron-back" size={24} color="white" />
                 </TouchableOpacity>
